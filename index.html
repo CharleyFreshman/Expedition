@@ -172,7 +172,7 @@ button:hover{transform:scale(1.05)}
     <h3>3星法术（圆形·范围）</h3>
     <p>
       <b style="color:#ff6b35">火</b> 扇形 大范围 高伤<br>
-      <b style="color:#66bb6a">木</b> 召唤树灵 嘲讽 持续伤害<br>
+      <b style="color:#66bb6a">木</b> 召唤树灵(20血) 嘲讽 持续伤害<br>
       <b style="color:#fdd835">土</b> 城墙(40血) 弹反怪物<br>
       <b style="color:#ab47bc">雷</b> 追踪多目标 连锁反应<br>
       <b style="color:#fff">冰</b> 冰封 中范围 冻结+伤害<br>
@@ -232,17 +232,17 @@ const ELEM_KEYS = ['fire','wood','earth','thunder','ice','water'];
 const SPELLS = [
   // === LINE (2星) 单体法术 ===
   { id:'fire_line',    name:'火球术',     elem:'fire',    gesture:'LINE', cost:1, type:'projectile', dmg:2, range:3*UNIT, r:8, splash:true },
-  { id:'wood_line',    name:'藤蔓缠绕',   elem:'wood',    gesture:'LINE', cost:1, type:'instant', dmg:1, range:4*UNIT, fx:'bind' },
+  { id:'wood_line',    name:'藤蔓缠绕',   elem:'wood',    gesture:'LINE', cost:1, type:'instant', dmg:1, range:3*UNIT, fx:'bind' },
   { id:'earth_line',   name:'碎石弹',   elem:'earth',   gesture:'LINE', cost:1, type:'projectile', dmg:2, trackRange:4*UNIT, r:9 },
   { id:'thunder_line', name:'晴空霹雳',     elem:'thunder', gesture:'LINE', cost:1, type:'zigzag',      dmg:2, len:3*UNIT },
   { id:'ice_line',     name:'冰锥术',     elem:'ice',     gesture:'LINE', cost:1, type:'projectile', dmg:2, range:3*UNIT, r:8 },
   { id:'water_line',   name:'龙王一喷',     elem:'water',   gesture:'LINE', cost:1, type:'line',        dmg:3, len:2*UNIT },
   // === CIRCLE (3星) 范围法术 ===
-  { id:'fire_circle',  name:'烈焰扇',   elem:'fire',    gesture:'CIRCLE', cost:2, type:'fan',      dmg:4, radius:3*UNIT, angle:Math.PI/2 },
-  { id:'wood_circle',  name:'树灵召唤', elem:'wood',    gesture:'CIRCLE', cost:2, type:'summon',   spiritHp:10, dur:99999 },
+  { id:'fire_circle',  name:'烈焰扇',   elem:'fire',    gesture:'CIRCLE', cost:2, type:'fan',      dmg:4, radius:3*UNIT, angle:Math.PI*2/3 },
+  { id:'wood_circle',  name:'树灵召唤', elem:'wood',    gesture:'CIRCLE', cost:2, type:'summon',   spiritHp:20, dur:99999 },
   { id:'earth_circle', name:'守护之墙',     elem:'earth',   gesture:'CIRCLE', cost:2, type:'wall',     size:2*UNIT, dur:8*60, wallHp:40 },
   { id:'thunder_circle',name:'雷の呼吸·柒之型', elem:'thunder', gesture:'CIRCLE', cost:2, type:'chain',    dmg:3, range:3*UNIT, maxJumps:8 },
-  { id:'ice_circle',   name:'千里冰封',     elem:'ice',     gesture:'CIRCLE', cost:2, type:'freeze',   radius:3*UNIT, dmg:3, freezeMon:6*60, freezeBoss:3*60 },
+  { id:'ice_circle',   name:'千里冰封',     elem:'ice',     gesture:'CIRCLE', cost:2, type:'freeze',   radius:2*UNIT, dmg:3, freezeMon:6*60, freezeBoss:3*60 },
   { id:'water_circle', name:'春风化雨', elem:'water',   gesture:'CIRCLE', cost:2, type:'healzone', radius:2*UNIT, healRate:10, dur:5*60 },
 ];
 const SPELL_MAP = {};
@@ -1226,7 +1226,24 @@ function updateProjectiles() {
         pr.life = 0;
       }
     } else {
-      if (dist(pr, p) < pr.r + p.r && !pr.hitSet.has(p)) {
+      // Enemy projectile vs wall
+      const wallHit = isInsideWall(pr.x, pr.y);
+      if (wallHit) {
+        wallHit.hp -= pr.dmg;
+        addParticles(pr.x, pr.y, '#8d6e63', 5, 3, 15);
+        pr.life = 0;
+      }
+      // Enemy projectile vs tree spirits
+      for (const s of G.treeSpirits) {
+        if (dist(pr, s) < pr.r + s.r) {
+          s.hp -= pr.dmg;
+          addParticles(s.x, s.y, '#66bb6a', 8, 3, 20);
+          addFloatText(s.x, s.y-s.r-5, '-'+pr.dmg, '#f44336');
+          pr.life = 0;
+          break;
+        }
+      }
+      if (pr.life > 0 && dist(pr, p) < pr.r + p.r && !pr.hitSet.has(p)) {
         pr.hitSet.add(p);
         let dmg = pr.dmg;
         if (p.shield > 0) { const a = Math.min(p.shield, dmg); p.shield -= a; dmg -= a; }
