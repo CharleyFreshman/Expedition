@@ -1,0 +1,2289 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no,viewport-fit=cover">
+<title>魔法远征 - 战斗原型Demo</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0a0a14;overflow:hidden;font-family:'Microsoft YaHei',sans-serif;color:#fff;touch-action:none}
+#canvas{display:block;cursor:crosshair}
+.overlay{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(10,10,20,.93);z-index:100;overflow-y:auto;padding:20px}
+.hidden{display:none!important}
+.overlay h1{font-size:42px;margin-bottom:6px;text-shadow:0 0 20px #4fc3f7;letter-spacing:4px}
+.subtitle{color:#888;margin-bottom:20px;font-size:16px}
+.panel{background:rgba(30,30,50,.8);border:1px solid #333;border-radius:10px;padding:14px 24px;margin:6px 0;max-width:480px}
+.panel h3{color:#4fc3f7;margin-bottom:6px;font-size:15px}
+.panel p{color:#bbb;font-size:13px;line-height:1.7}
+.gesture-icons{display:flex;gap:12px;justify-content:center;margin:8px 0}
+.gi{display:flex;flex-direction:column;align-items:center;font-size:11px;color:#888}
+.gi svg{width:36px;height:36px;margin-bottom:2px}
+button{padding:12px 40px;font-size:18px;color:#fff;background:linear-gradient(135deg,#ff6b35,#f7931e);border:none;border-radius:8px;cursor:pointer;margin-top:16px;transition:transform .2s}
+button:hover{transform:scale(1.05)}
+#hud{position:fixed;inset:0;pointer-events:none;z-index:50}
+#top-bar{position:absolute;top:10px;left:50%;transform:translateX(-50%);display:flex;gap:12px;align-items:center}
+#hp-box{width:200px;height:22px;background:rgba(0,0,0,.6);border:1px solid #444;border-radius:11px;overflow:hidden;position:relative}
+#hp-bar{height:100%;background:linear-gradient(90deg,#f44336,#ff8a65);transition:width .3s;width:100%}
+#hp-bar.shield{background:linear-gradient(90deg,#5c6bc0,#7986cb)}
+#hp-text{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:12px;text-shadow:0 0 3px #000}
+.tag{background:rgba(0,0,0,.6);padding:3px 10px;border-radius:5px;font-size:13px;border:1px solid #444}
+#mat-bar{position:absolute;bottom:12px;left:50%;transform:translateX(-50%);display:flex;gap:6px;pointer-events:auto}
+.mslot{width:48px;height:48px;border-radius:8px;background:rgba(0,0,0,.6);border:2px solid #333;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;position:relative;transition:all .15s}
+.mslot.active{border-color:#fff;transform:translateY(-4px);box-shadow:0 0 12px var(--gc)}
+.mslot.empty{opacity:.35}
+.mslot .ico{font-size:18px;line-height:1}
+.mslot .cnt{font-size:11px;color:#ccc;margin-top:1px}
+.mslot .key{position:absolute;top:-2px;right:-2px;font-size:9px;background:#333;border-radius:3px;padding:0 3px;color:#999}
+#spell-fb{position:absolute;top:35%;left:50%;transform:translate(-50%,-50%);font-size:28px;font-weight:bold;text-shadow:0 0 10px currentColor;opacity:0;transition:opacity .3s;pointer-events:none;text-align:center;white-space:nowrap}
+#hint{position:absolute;bottom:68px;left:50%;transform:translateX(-50%);color:#666;font-size:12px}
+.stats{color:#aaa;font-size:16px;line-height:2;text-align:center}
+.stats span{color:#4fc3f7;font-weight:bold;font-size:18px}
+.btn-row{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-top:16px}
+.btn-sec{background:linear-gradient(135deg,#455a64,#37474f);font-size:15px;padding:10px 24px;margin-top:0}
+.btn-green{background:linear-gradient(135deg,#2e7d32,#43a047);font-size:15px;padding:10px 24px;margin-top:0}
+.btn-yellow{background:linear-gradient(135deg,#f57f17,#f9a825);font-size:15px;padding:10px 24px;margin-top:0;color:#000}
+.btn-red{background:linear-gradient(135deg,#c62828,#e53935);font-size:15px;padding:10px 24px;margin-top:0}
+#gameover-screen .btn-row button{min-width:140px;text-align:center}
+#pause-screen .btn-row button, #quit-confirm .btn-row button{min-width:100px;text-align:center}
+.quit-confirm{margin-top:14px;padding:12px;background:rgba(244,67,54,.1);border:1px solid #ef5350;border-radius:8px;text-align:center}
+.quit-confirm p{color:#ef5350;font-size:14px;margin-bottom:8px}
+#ctrl-btns{position:absolute;top:10px;right:10px;pointer-events:auto;display:flex;gap:6px}
+.ctrl-btn{width:36px;height:36px;font-size:14px;padding:0;margin:0;background:rgba(0,0,0,.6);border:1px solid #444;border-radius:6px;color:#ccc;cursor:pointer;transition:all .15s}
+.ctrl-btn:hover{background:rgba(255,255,255,.15);color:#fff}
+.save-msg{margin-top:10px;font-size:14px;color:#66bb6a;text-align:center}
+.save-msg.err{color:#f44336}
+#boss-hp-box{position:absolute;top:40px;left:50%;transform:translateX(-50%);width:320px;height:18px;background:rgba(0,0,0,.7);border:2px solid #f44336;border-radius:9px;overflow:hidden;position:absolute}
+#boss-hp-bar{height:100%;background:linear-gradient(90deg,#d32f2f,#ff6b35);transition:width .3s;width:100%}
+#boss-hp-text{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:11px;text-shadow:0 0 3px #000;font-weight:bold}
+#adv-info{position:absolute;bottom:12px;right:12px;color:#888;font-size:12px;text-align:right;pointer-events:none}
+.adv-display{margin-top:8px;color:#4fc3f7;font-size:14px}
+
+/* ===== 移动端适配 ===== */
+@media (hover:none) and (pointer:coarse){
+  .overlay{padding:12px}
+  .overlay h1{font-size:30px;letter-spacing:2px}
+  .subtitle{font-size:13px;margin-bottom:12px}
+  .panel{padding:10px 16px;margin:4px 0;max-width:92vw}
+  .panel h3{font-size:14px}
+  .panel p{font-size:12px;line-height:1.6}
+  button{padding:14px 36px;font-size:16px;margin-top:12px}
+  .btn-sec,.btn-green,.btn-yellow,.btn-red{padding:12px 20px;font-size:14px}
+  .gi svg{width:30px;height:30px}
+  .gi{font-size:10px}
+  /* 顶部HUD缩小 */
+  #top-bar{top:max(8px,env(safe-area-inset-top));gap:8px}
+  #hp-box{width:140px;height:20px}
+  #hp-text{font-size:11px}
+  .tag{font-size:11px;padding:2px 8px}
+  /* 材料槽加大触控 */
+  #mat-bar{bottom:max(8px,env(safe-area-inset-bottom));gap:4px}
+  .mslot{width:42px;height:42px;border-radius:8px}
+  .mslot .ico{font-size:16px}
+  .mslot .cnt{font-size:10px}
+  .mslot .key{display:none}
+  /* 法术反馈缩小 */
+  #spell-fb{font-size:22px}
+  #hint{display:none}
+  /* Boss血条适应 */
+  #boss-hp-box{top:max(34px,calc(env(safe-area-inset-top) + 28px));width:80vw;max-width:300px}
+  /* 暂停按钮加大 */
+  .ctrl-btn{width:40px;height:40px;font-size:16px}
+  #ctrl-btns{top:max(8px,env(safe-area-inset-top));right:max(8px,env(safe-area-inset-right))}
+  /* 冒险信息隐藏避免遮挡 */
+  #adv-info{font-size:10px;bottom:max(8px,env(safe-area-inset-bottom))}
+  .stats{font-size:14px}
+  .stats span{font-size:16px}
+  .quit-confirm p{font-size:13px}
+}
+</style>
+</head>
+<body>
+<canvas id="canvas"></canvas>
+
+<div id="hud" class="hidden">
+  <div id="top-bar">
+    <div id="hp-box"><div id="hp-bar"></div><span id="hp-text">100/100</span></div>
+    <div class="tag" id="wave-tag">第1波</div>
+    <div class="tag" id="score-tag">分数 0</div>
+  </div>
+  <div id="mat-bar"></div>
+  <div id="boss-hp-box" class="hidden"><div id="boss-hp-bar"></div><span id="boss-hp-text"></span></div>
+  <div id="spell-fb"></div>
+  <div id="hint">选择材料后在屏幕上画手势施法</div>
+  <div id="adv-info"></div>
+  <div id="ctrl-btns">
+    <button class="ctrl-btn" id="pause-btn" title="暂停 (P/Esc)">❚❚</button>
+  </div>
+</div>
+
+<div id="pause-screen" class="overlay hidden">
+  <h1>已暂停</h1>
+  <div class="panel" id="pause-stats-panel">
+    <h3>当前进度</h3>
+    <p id="pause-stats">-</p>
+  </div>
+  <div class="btn-row">
+    <button id="resume-btn" class="btn-green">继续</button>
+    <button id="save-btn" class="btn-yellow">保存</button>
+    <button id="quit-btn" class="btn-red">返回</button>
+  </div>
+  <div id="save-msg" class="save-msg hidden"></div>
+  <div id="quit-confirm" class="quit-confirm hidden">
+    <p>有未保存的进度，确认放弃？</p>
+    <div class="btn-row">
+      <button id="quit-confirm-yes" class="btn-red">确认放弃</button>
+      <button id="quit-confirm-no" class="btn-green">取消</button>
+    </div>
+  </div>
+</div>
+
+<div id="start-screen" class="overlay">
+  <h1>魔法远征</h1>
+  <p class="subtitle">材料 + 手势 = 法术</p>
+  <div class="panel" id="ctrl-pc">
+    <h3>操作方式</h3>
+    <p>移动: WASD / 方向键<br>施法: 选择材料后鼠标画手势<br>切换材料: 数字键1-6 或点击下方材料槽</p>
+  </div>
+  <div class="panel" id="ctrl-mobile" style="display:none">
+    <h3>触屏操作</h3>
+    <p>
+      <span style="color:#4fc3f7">左半屏</span> 虚拟摇杆移动<br>
+      <span style="color:#ff6b35">右半屏</span> 滑动画手势施法<br>
+      <span style="color:#66bb6a">底部</span> 点击材料槽切换元素
+    </p>
+  </div>
+  <div class="panel">
+    <h3>手势对应</h3>
+    <div class="gesture-icons">
+      <div class="gi"><svg viewBox="0 0 40 40"><path d="M6 20 L34 20" stroke="#4fc3f7" stroke-width="3" fill="none" stroke-linecap="round"/></svg>直线(2星)→单体</div>
+      <div class="gi"><svg viewBox="0 0 40 40"><circle cx="20" cy="20" r="13" stroke="#4fc3f7" stroke-width="2.5" fill="none"/></svg>圆形(3星)→范围</div>
+      <div class="gi" style="opacity:0.3"><svg viewBox="0 0 40 40"><path d="M8 8 L32 8 L32 32 L8 32 Z" stroke="#888" stroke-width="2.5" fill="none" stroke-linejoin="round"/></svg>四星以上 敬请期待</div>
+    </div>
+  </div>
+  <div class="panel">
+    <h3>2星法术（直线·单体）</h3>
+    <p>
+      <b style="color:#ff6b35">火</b> 投掷 灼烧 | <b style="color:#66bb6a">木</b> 选中 束缚<br>
+      <b style="color:#fdd835">土</b> 投掷 分裂 | <b style="color:#ab47bc">雷</b> 折线 远程<br>
+      <b style="color:#fff">冰</b> 投掷 减速 | <b style="color:#42a5f5">水</b> 线段 近程
+    </p>
+  </div>
+  <div class="panel">
+    <h3>3星法术（圆形·范围）</h3>
+    <p>
+      <b style="color:#ff6b35">火</b> 扇形 大范围 高伤<br>
+      <b style="color:#66bb6a">木</b> 召唤树灵 嘲讽 持续伤害<br>
+      <b style="color:#fdd835">土</b> 城墙 阻挡敌人 可进出<br>
+      <b style="color:#ab47bc">雷</b> 追踪多目标 连锁反应<br>
+      <b style="color:#fff">冰</b> 冰封 中范围 冻结+伤害<br>
+      <b style="color:#42a5f5">水</b> 治疗领域 中范围 持续回血
+    </p>
+  </div>
+  <div class="panel">
+    <h3>元素克制</h3>
+    <p style="line-height:2">
+      <b style="color:#ff6b35">火</b> 克 <b style="color:#66bb6a">木</b> |
+      <b style="color:#66bb6a">木</b> 克 <b style="color:#fdd835">土</b> |
+      <b style="color:#fdd835">土</b> 克 <b style="color:#ab47bc">雷</b><br>
+      <b style="color:#ab47bc">雷</b> 克 <b style="color:#fff">冰</b> |
+      <b style="color:#fff">冰</b> 克 <b style="color:#42a5f5">水</b> |
+      <b style="color:#42a5f5">水</b> 克 <b style="color:#ff6b35">火</b><br>
+      克制伤害×1.5 被克减半×0.5
+    </p>
+  </div>
+  <button id="start-btn">开始冒险</button>
+  <div id="adv-display" class="adv-display"></div>
+  <button id="continue-btn" class="btn-sec hidden">继续游戏</button>
+</div>
+
+<div id="gameover-screen" class="overlay hidden">
+  <h1 id="go-title">冒险结束</h1>
+  <p class="subtitle" id="go-subtitle"></p>
+  <div class="stats" id="go-stats"></div>
+  <div class="btn-row">
+    <button id="restart-btn" class="btn-green">再来一局</button>
+    <button class="btn-red" id="back-home-btn">到此为止</button>
+  </div>
+</div>
+
+<script>
+"use strict";
+/* ============================================================
+ * 魔法远征 - 战斗原型 Demo
+ * 核心机制: 选择元素材料 → 画手势 → 释放法术
+ * 技术: HTML5 Canvas + $1 Unistroke Gesture Recognizer
+ * ============================================================ */
+
+// ======================== 配置 ========================
+const UNIT = 100; // 1单位 = 100像素
+
+const ELEMENTS = {
+  fire:    { name:'火', color:'#ff6b35', icon:'\u{1F525}' },
+  earth:   { name:'土', color:'#fdd835', icon:'\u26F0' },
+  water:   { name:'水', color:'#42a5f5', icon:'\u{1F4A7}' },
+  wood:    { name:'木', color:'#66bb6a', icon:'\u{1F33F}' },
+  ice:     { name:'冰', color:'#ffffff', icon:'\u2744' },
+  thunder: { name:'雷', color:'#ab47bc', icon:'\u26A1' },
+};
+const ELEM_KEYS = ['fire','wood','earth','thunder','ice','water'];
+
+// 2星(直线LINE)单体法术: 水为线段、雷为折线、其他为投掷物
+// 3星(圆形CIRCLE)范围法术: 各元素不同效果
+const SPELLS = [
+  // === LINE (2星) 单体法术 ===
+  { id:'fire_line',    name:'火弹',     elem:'fire',    gesture:'LINE', cost:1, type:'projectile', dmg:2, range:3*UNIT, r:8, splash:true },
+  { id:'wood_line',    name:'藤蔓弹',   elem:'wood',    gesture:'LINE', cost:1, type:'instant', dmg:1, range:4*UNIT, fx:'bind' },
+  { id:'earth_line',   name:'碎石弹',   elem:'earth',   gesture:'LINE', cost:1, type:'projectile', dmg:2, trackRange:4*UNIT, r:9 },
+  { id:'thunder_line', name:'雷光',     elem:'thunder', gesture:'LINE', cost:1, type:'zigzag',      dmg:2, len:3*UNIT },
+  { id:'ice_line',     name:'冰锥',     elem:'ice',     gesture:'LINE', cost:1, type:'projectile', dmg:2, range:3*UNIT, r:8 },
+  { id:'water_line',   name:'水流',     elem:'water',   gesture:'LINE', cost:1, type:'line',        dmg:3, len:2*UNIT },
+  // === CIRCLE (3星) 范围法术 ===
+  { id:'fire_circle',  name:'烈焰扇',   elem:'fire',    gesture:'CIRCLE', cost:2, type:'fan',      dmg:4, radius:3*UNIT, angle:Math.PI/2 },
+  { id:'wood_circle',  name:'树灵召唤', elem:'wood',    gesture:'CIRCLE', cost:2, type:'summon',   spiritHp:10, dur:99999 },
+  { id:'earth_circle', name:'城墙',     elem:'earth',   gesture:'CIRCLE', cost:2, type:'wall',     size:2*UNIT, dur:8*60, wallHp:20 },
+  { id:'thunder_circle',name:'连锁雷击', elem:'thunder', gesture:'CIRCLE', cost:2, type:'chain',    dmg:3, range:3*UNIT, maxJumps:8 },
+  { id:'ice_circle',   name:'冰封',     elem:'ice',     gesture:'CIRCLE', cost:2, type:'freeze',   radius:2*UNIT, dmg:3, freezeMon:6*60, freezeBoss:3*60 },
+  { id:'water_circle', name:'治愈领域', elem:'water',   gesture:'CIRCLE', cost:2, type:'healzone', radius:2*UNIT, healRate:10, dur:5*60 },
+];
+const SPELL_MAP = {};
+SPELLS.forEach(s => { SPELL_MAP[s.elem + '|' + s.gesture] = s; });
+
+const ENEMY_TYPES = {
+  slime:   { name:'水史莱姆', elem:'water',   hp:3, spd:1.0, dmg:5, r:18, drop:'water',   ai:'chase'  },
+  wolf:    { name:'土野狼',   elem:'earth',   hp:3, spd:1.0, dmg:2, r:15, drop:'earth',   ai:'charge' },
+  bat:     { name:'雷蝙蝠',   elem:'thunder', hp:3, spd:1.8, dmg:3, r:12, drop:'thunder', ai:'swarm'  },
+  spirit:  { name:'木精',     elem:'wood',    hp:6, spd:.8,  dmg:4, r:16, drop:'wood',    ai:'ranged', atkRange:200, atkCD:120, elite:true },
+  firebug: { name:'火熔岩虫', elem:'fire',    hp:3, spd:1.3, dmg:4, r:14, drop:'fire',    ai:'chase'  },
+  iceshard:{ name:'冰冰魔',   elem:'ice',     hp:3, spd:1.5, dmg:3, r:13, drop:'ice',     ai:'swarm'  },
+};
+
+const COUNTERS = {
+  fire: 'wood', wood: 'earth', earth: 'thunder',
+  thunder: 'ice', ice: 'water', water: 'fire',
+};
+
+const WAVE_TABLE = [
+  ['slime','slime','slime'],
+  ['slime','firebug','wolf','wolf'],
+  ['wolf','wolf','bat','firebug'],
+  ['bat','bat','firebug','iceshard','slime'],
+  ['slime','wolf','bat','iceshard','firebug'],
+  ['wolf','bat','firebug','iceshard','slime'],
+];
+
+const BOSS_INTERVAL = 4;
+const BOSS_TYPES = {
+  fairy: {
+    name: '腐化妖精', hp: 50, spd: 1.0, dmg: 10, r: 30,
+    phases: [
+      { hpPct: 1.0,  weak: 'water',  resist: 'wood',   name: '火属性',   elemMode: 'fire',    immune: 'wood',   summon: 'firebug', summonCD: 360, spdMult: 1.0 },
+      { hpPct: 0.65, weak: 'water',  resist: 'wood',   name: '雷属性',   elemMode: 'thunder', immune: 'wood',   summon: 'bat',     summonCD: 300, spdMult: 1.3 },
+      { hpPct: 0.30, weak: 'water',  resist: 'wood',   name: '狂暴',     elemMode: 'fire',    immune: 'wood',   summon: 'spirit',  summonCD: 240, spdMult: 1.6, dmgMult: 1.3, scatter: true },
+    ],
+  },
+};
+
+const PROF_MAX = 100;
+const PROF_PER_CAST = 1;       // 每次施法造成伤害或回血+1
+const PROF_BONUS_PER_50 = 0.10; // 每50点熟练度+10%伤害
+
+// ======================== 工具函数 ========================
+const TAU = Math.PI * 2;
+const dist = (a,b) => Math.hypot(a.x-b.x, a.y-b.y);
+const lerp = (a,b,t) => a+(b-a)*t;
+const clamp = (v,lo,hi) => v<lo?lo:v>hi?hi:v;
+const rand = (lo,hi) => lo+Math.random()*(hi-lo);
+const pick = arr => arr[Math.floor(Math.random()*arr.length)];
+
+function pathLength(pts) {
+  let s=0; for(let i=1;i<pts.length;i++) s+=dist(pts[i-1],pts[i]); return s;
+}
+function centroid(pts) {
+  let x=0,y=0; for(const p of pts){x+=p.x;y+=p.y;} return {x:x/pts.length,y:y/pts.length};
+}
+function boundingBox(pts) {
+  let mnX=1e9,mxX=-1e9,mnY=1e9,mxY=-1e9;
+  for(const p of pts){mnX=Math.min(mnX,p.x);mxX=Math.max(mxX,p.x);mnY=Math.min(mnY,p.y);mxY=Math.max(mxY,p.y);}
+  return {w:Math.max(.001,mxX-mnX), h:Math.max(.001,mxY-mnY)};
+}
+
+// ======================== 手势识别 ($1 Unistroke Recognizer) ========================
+const NPTS = 64;
+const SQSIZE = 250;
+const HALF_DIAG = 0.5*Math.sqrt(SQSIZE*SQSIZE+SQSIZE*SQSIZE);
+const ANG_RANGE = Math.PI/4;
+const ANG_PREC = Math.PI/90;
+
+function resamplePath(pts, n) {
+  const len = pathLength(pts);
+  if (len < 1) return Array(n).fill({...pts[0]});
+  const I = len/(n-1);
+  const out = [{...pts[0]}];
+  let prev = {...pts[0]}, acc = 0;
+  for (let i=1; i<pts.length; i++) {
+    let curr = pts[i];
+    let d = dist(prev, curr);
+    while (acc+d >= I && out.length < n) {
+      const t = (I-acc)/d;
+      const q = {x:prev.x+t*(curr.x-prev.x), y:prev.y+t*(curr.y-prev.y)};
+      out.push(q); prev = q; d = dist(prev, curr); acc = 0;
+    }
+    acc += d; prev = {...curr};
+  }
+  while (out.length < n) out.push({...pts[pts.length-1]});
+  return out;
+}
+function indicativeAngle(pts) {
+  const c = centroid(pts);
+  return Math.atan2(c.y-pts[0].y, c.x-pts[0].x);
+}
+function rotatePoints(pts, ang) {
+  const c = centroid(pts), co=Math.cos(ang), si=Math.sin(ang);
+  return pts.map(p => ({x:(p.x-c.x)*co-(p.y-c.y)*si+c.x, y:(p.x-c.x)*si+(p.y-c.y)*co+c.y}));
+}
+function scalePoints(pts, sz) {
+  const bb = boundingBox(pts);
+  return pts.map(p => ({x:p.x*(sz/bb.w), y:p.y*(sz/bb.h)}));
+}
+function translatePoints(pts, tx, ty) {
+  const c = centroid(pts);
+  return pts.map(p => ({x:p.x+tx-c.x, y:p.y+ty-c.y}));
+}
+function avgPathDistance(a, b) {
+  let s=0; for(let i=0;i<a.length;i++) s+=dist(a[i],b[i]); return s/a.length;
+}
+function distanceAtBestAngle(pts, tpl, a, b, tol) {
+  const phi = 0.5*(-1+Math.sqrt(5));
+  let x1 = phi*a+(1-phi)*b, f1 = avgPathDistance(pts, rotatePoints(tpl, x1));
+  let x2 = (1-phi)*a+phi*b, f2 = avgPathDistance(pts, rotatePoints(tpl, x2));
+  while (Math.abs(b-a) > tol) {
+    if (f1 < f2) { b=x2; x2=x1; f2=f1; x1=phi*a+(1-phi)*b; f1=avgPathDistance(pts, rotatePoints(tpl, x1)); }
+    else { a=x1; x1=x2; f1=f2; x2=(1-phi)*a+phi*b; f2=avgPathDistance(pts, rotatePoints(tpl, x2)); }
+  }
+  return Math.min(f1, f2);
+}
+
+function normalizePath(pts) {
+  pts = resamplePath(pts, NPTS);
+  pts = rotatePoints(pts, -indicativeAngle(pts));
+  pts = scalePoints(pts, SQSIZE);
+  pts = translatePoints(pts, 0, 0);
+  return pts;
+}
+
+function makeTemplate(drawFn) {
+  const raw = [];
+  for (let i=0; i<=200; i++) raw.push(drawFn(i/200));
+  return normalizePath(raw);
+}
+
+let TEMPLATES = null;
+function getTemplates() {
+  if (TEMPLATES) return TEMPLATES;
+  const tri = [{x:0,y:-100},{x:-87,y:50},{x:87,y:50}];
+  const sqr = [{x:-80,y:-80},{x:80,y:-80},{x:80,y:80},{x:-80,y:80}];
+  const zig = [{x:-100,y:40},{x:-50,y:-40},{x:0,y:40},{x:50,y:-40},{x:100,y:40}];
+  const segPath = (corners, segs) => t => {
+    let seg = t*segs;
+    if (seg >= segs) seg = segs - 0.0001;
+    const i=Math.floor(seg), f=seg-i;
+    const a=corners[i], b=corners[(i+1)%corners.length];
+    return {x:a.x+f*(b.x-a.x), y:a.y+f*(b.y-a.y)};
+  };
+  TEMPLATES = {
+    LINE:     makeTemplate(t => ({x:-100+200*t, y:0})),
+    CIRCLE:   makeTemplate(t => ({x:Math.cos(t*TAU)*80, y:Math.sin(t*TAU)*80})),
+  };
+  return TEMPLATES;
+}
+
+function recognizeGesture(rawPts) {
+  if (rawPts.length < 8) return {type:'NONE', score:0};
+  const pts = [rawPts[0]];
+  for (let i=1; i<rawPts.length; i++) {
+    if (dist(pts[pts.length-1], rawPts[i]) > 2) pts.push(rawPts[i]);
+  }
+  if (pts.length < 5) return {type:'NONE', score:0};
+  const bb = boundingBox(pts);
+  if (Math.max(bb.w, bb.h) < 30) return {type:'NONE', score:0};
+
+  // Curve detection: if path is significantly longer than straight line from start to end, it's a circle/arc
+  const startEnd = dist(pts[0], pts[pts.length-1]);
+  const plen = pathLength(pts);
+  const curveRatio = plen / Math.max(startEnd, 1);
+  const aspectRatio = Math.min(bb.w, bb.h) / Math.max(bb.w, bb.h, 1);
+  if (curveRatio > 1.3 && aspectRatio > 0.25) {
+    return {type:'CIRCLE', score: 0.8};
+  }
+
+  // Template match for LINE only
+  const normalized = normalizePath(pts);
+  const tpls = getTemplates();
+  const d = distanceAtBestAngle(normalized, tpls.LINE, -ANG_RANGE, ANG_RANGE, ANG_PREC);
+  const score = 1 - d / HALF_DIAG;
+  return score > 0.5 ? {type:'LINE', score} : {type:'NONE', score:0};
+}
+
+// ======================== 游戏状态 ========================
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+let W=0, H=0;
+const IS_MOBILE = (matchMedia('(hover:none) and (pointer:coarse)').matches) || ('ontouchstart' in window && window.innerWidth < 1024);
+
+const G = {
+  state: 'START',
+  player: null,
+  enemies: [],
+  projectiles: [],
+  particles: [],
+  crystals: [],
+  healPacks: [],
+  floatTexts: [],
+  walls: [],
+  healZones: [],
+  treeSpirits: [],
+  lineEffects: [],
+  wave: 0,
+  waveActive: false,
+  waveCD: 0,
+  spawnQueue: [],
+  spawnTimer: 0,
+  score: 0,
+  kills: 0,
+  selectedMat: 'fire',
+  materials: {},
+  gesturePts: [],
+  isDrawing: false,
+  drawId: 0,
+  drawTouchId: null,
+  keys: {},
+  joy: {active:false, cx:0, cy:0, dx:0, dy:0, id:null},
+  shake: 0,
+  fbText: '', fbColor:'#fff', fbTimer: 0,
+  time: 0,
+  paused: false,
+  boss: null,
+  evacPoint: null,
+  adventureLevel: 1,
+  proficiency: {},
+  unsaved: false,
+};
+
+const SAVE_KEY = 'element_expedition_save';
+const ADV_KEY = 'element_expedition_adv';
+
+function resize() {
+  W = canvas.width = window.innerWidth;
+  H = canvas.height = window.innerHeight;
+}
+window.addEventListener('resize', resize);
+window.addEventListener('orientationchange', () => setTimeout(resize, 100));
+resize();
+if (IS_MOBILE) {
+  document.documentElement.style.height = '100vh';
+  document.body.style.height = '100vh';
+}
+
+// ======================== 实体创建 ========================
+function createPlayer() {
+  return { x:W/2, y:H/2, vx:0, vy:0, r:16, hp:100, maxHp:100, facing:0, shield:0, shieldTimer:0,
+           slowTimer:0, rootTimer:0, hitFlash:0 };
+}
+
+function spawnEnemy(type) {
+  const t = ENEMY_TYPES[type];
+  const side = Math.floor(Math.random()*4);
+  let x, y;
+  const m = 40;
+  if (side===0) { x=rand(0,W); y=-m; }
+  else if (side===1) { x=W+m; y=rand(0,H); }
+  else if (side===2) { x=rand(0,W); y=H+m; }
+  else { x=-m; y=rand(0,H); }
+  const hpScale = 1 + (G.adventureLevel - 1) * 0.15;
+  G.enemies.push({
+    type, x, y, vx:0, vy:0, r:t.r, hp:t.hp*hpScale, maxHp:t.hp*hpScale,
+    facing:0, hitFlash:0, slowT:0, slowStacks:0, freezeT:0, rootT:0,
+    atkCD: t.atkCD||0, chargeT:0, swarmAngle:rand(0,TAU),
+  });
+}
+
+function spawnCrystal() {
+  const dropElem = pick(ELEM_KEYS);
+  G.crystals.push({
+    x: rand(60, W-60), y: rand(60, H-60), elem:dropElem, r:12, pulse:0, life:600
+  });
+}
+
+function spawnHealPack() {
+  const p = G.player;
+  const ang = rand(0, TAU);
+  const d = rand(80, 160);
+  G.healPacks.push({
+    x: p.x + Math.cos(ang)*d, y: p.y + Math.sin(ang)*d,
+    r: 14, pulse: 0
+  });
+}
+
+function addParticles(x, y, color, count, spd, life) {
+  for (let i=0; i<count; i++) {
+    const a = rand(0, TAU), s = rand(spd*0.3, spd);
+    G.particles.push({x, y, vx:Math.cos(a)*s, vy:Math.sin(a)*s, life, maxLife:life, color, r:rand(2,5)});
+  }
+}
+
+function addFloatText(x, y, text, color) {
+  G.floatTexts.push({x, y, text, color, life:60, vy:-1});
+}
+
+// ======================== 法术系统 ========================
+function findNearestEnemy(x, y) {
+  let best=null, md=1e9;
+  for (const e of G.enemies) {
+    const d = Math.hypot(e.x-x, e.y-y);
+    if (d < md) { md=d; best=e; }
+  }
+  if (G.boss) {
+    const d = Math.hypot(G.boss.x-x, G.boss.y-y);
+    if (d < md) best = G.boss;
+  }
+  return best;
+}
+
+function tryCastSpell(gestureType) {
+  if (gestureType === 'NONE') return;
+  const key = G.selectedMat + '|' + gestureType;
+  const spell = SPELL_MAP[key];
+  if (!spell) {
+    showFeedback('四星以上敬请期待', '#888');
+    return;
+  }
+  if (G.materials[G.selectedMat] < spell.cost) {
+    showFeedback(ELEMENTS[G.selectedMat].name + '不足', '#f44336');
+    return;
+  }
+  G.materials[G.selectedMat] -= spell.cost;
+  G.unsaved = true;
+  castSpell(spell);
+  showFeedback(spell.name, ELEMENTS[spell.elem].color);
+  addParticles(G.player.x, G.player.y, ELEMENTS[spell.elem].color, 12, 4, 30);
+}
+
+function isInsideWall(x, y) {
+  for (const w of G.walls) {
+    if (x > w.x - w.size/2 && x < w.x + w.size/2 && y > w.y - w.size/2 && y < w.y + w.size/2)
+      return w;
+  }
+  return null;
+}
+
+function castSpell(spell) {
+  const p = G.player;
+  const wall = isInsideWall(p.x, p.y);
+  if (wall) {
+    showFeedback('被困墙中，无法施法！', '#f44336');
+    G.materials[spell.elem] += spell.cost; // refund
+    return;
+  }
+
+  if (spell.type === 'instant') {
+    // 木：选中最近敌人，直接施加伤害+束缚，无投掷过程
+    let target = null, md = spell.range;
+    for (const e of G.enemies) {
+      const d = Math.hypot(e.x-p.x, e.y-p.y);
+      if (d < md) { md=d; target=e; }
+    }
+    if (G.boss) {
+      const d = Math.hypot(G.boss.x-p.x, G.boss.y-p.y);
+      if (d < md) target = G.boss;
+    }
+    if (target) {
+      // 法阵视觉效果
+      G.lineEffects.push({type:'magicCircle', x:target.x, y:target.y, r:target.r+8, elem:spell.elem, life:30, color:ELEMENTS[spell.elem].color});
+      if (target === G.boss) {
+        damageBoss(spell.dmg, spell.elem);
+      } else {
+        damageEnemy(target, spell.dmg, spell.elem);
+      }
+      if (spell.fx === 'bind') {
+        target.rootT = 5*60;
+        addFloatText(target.x, target.y-target.r-5, '束缚', '#66bb6a');
+      }
+      addParticles(target.x, target.y, ELEMENTS[spell.elem].color, 10, 3, 20);
+      addProf(spell.elem);
+    } else {
+      showFeedback('范围内无目标', '#888');
+      G.materials[spell.elem] += spell.cost;
+    }
+  } else if (spell.type === 'projectile') {
+    // Earth: track nearest enemy within trackRange, then fly straight (dodgeable)
+    const trackRange = spell.trackRange || spell.range;
+    let target = null;
+    if (trackRange) {
+      let md = trackRange;
+      for (const e of G.enemies) {
+        const d = Math.hypot(e.x-p.x, e.y-p.y);
+        if (d < md) { md=d; target=e; }
+      }
+      if (G.boss) {
+        const d = Math.hypot(G.boss.x-p.x, G.boss.y-p.y);
+        if (d < md) target = G.boss;
+      }
+    }
+    let ang = target ? Math.atan2(target.y-p.y, target.x-p.x) : p.facing;
+    const isEarth = spell.elem === 'earth';
+    G.projectiles.push({
+      x:p.x, y:p.y, vx:Math.cos(ang)*6, vy:Math.sin(ang)*6,
+      dmg:spell.dmg, elem:spell.elem, r:spell.r,
+      life: isEarth ? 300 : 100,
+      range: isEarth ? null : spell.range, traveled:0, fx:spell.fx||null,
+      hitSet:new Set(), canSplit: isEarth, splitDir: ang,
+    });
+  } else if (spell.type === 'line') {
+    // 水：2单位长度线段，伤害3，追踪最近敌人，停留1s持续伤害
+    const target = findNearestEnemy(p.x, p.y);
+    const ang = target ? Math.atan2(target.y-p.y, target.x-p.x) : p.facing;
+    const ex = p.x + Math.cos(ang)*spell.len, ey = p.y + Math.sin(ang)*spell.len;
+    G.lineEffects.push({type:'water', x1:p.x, y1:p.y, x2:ex, y2:ey, elem:spell.elem, life:60, color:ELEMENTS[spell.elem].color, width:18, dmg:spell.dmg});
+    let hitAny = false;
+    for (const e of G.enemies) {
+      if (pointToLineDist(e.x, e.y, p.x, p.y, ex, ey) < e.r + 12) {
+        damageEnemy(e, spell.dmg, spell.elem); e.waterCD = 48; hitAny = true;
+      }
+    }
+    if (G.boss && pointToLineDist(G.boss.x, G.boss.y, p.x, p.y, ex, ey) < G.boss.r + 12) {
+      damageBoss(spell.dmg, spell.elem); G.boss.waterCD = 48; hitAny = true;
+    }
+    if (hitAny) addProf(spell.elem);
+  } else if (spell.type === 'zigzag') {
+    // 雷：3单位长度折线，伤害2，追踪最近敌人
+    const target = findNearestEnemy(p.x, p.y);
+    const ang = target ? Math.atan2(target.y-p.y, target.x-p.x) : p.facing;
+    const segs = [];
+    let cx = p.x, cy = p.y;
+    const zigLen = spell.len / 4;
+    for (let i=0; i<4; i++) {
+      const offset = (i % 2 === 0 ? 1 : -1) * 15;
+      const perp = ang + Math.PI/2;
+      const nx = cx + Math.cos(ang)*zigLen + Math.cos(perp)*offset;
+      const ny = cy + Math.sin(ang)*zigLen + Math.sin(perp)*offset;
+      segs.push({x1:cx, y1:cy, x2:nx, y2:ny});
+      cx = nx; cy = ny;
+    }
+    G.lineEffects.push({type:'zigzag', segs, elem:spell.elem, life:30, color:ELEMENTS[spell.elem].color, width:8});
+    let hitAny = false;
+    const hitSet = new Set();
+    for (const seg of segs) {
+      for (const e of G.enemies) {
+        if (hitSet.has(e)) continue;
+        if (pointToLineDist(e.x, e.y, seg.x1, seg.y1, seg.x2, seg.y2) < e.r + 6) {
+          hitSet.add(e); damageEnemy(e, spell.dmg, spell.elem); hitAny = true;
+        }
+      }
+      if (G.boss && !hitSet.has(G.boss) && pointToLineDist(G.boss.x, G.boss.y, seg.x1, seg.y1, seg.x2, seg.y2) < G.boss.r + 6) {
+        hitSet.add(G.boss); damageBoss(spell.dmg, spell.elem); hitAny = true;
+      }
+    }
+    if (hitAny) addProf(spell.elem);
+  } else if (spell.type === 'fan') {
+    // 火：正前方90度扇形，半径3单位，伤害4
+    G.lineEffects.push({type:'fan', x:p.x, y:p.y, ang:p.facing, radius:spell.radius, angle:spell.angle, elem:spell.elem, life:20, color:ELEMENTS[spell.elem].color});
+    let hitAny = false;
+    for (const e of G.enemies) {
+      const d = dist(e, p);
+      if (d > spell.radius + e.r) continue;
+      let angDiff = Math.atan2(e.y-p.y, e.x-p.x) - p.facing;
+      while (angDiff > Math.PI) angDiff -= TAU;
+      while (angDiff < -Math.PI) angDiff += TAU;
+      if (Math.abs(angDiff) < spell.angle/2) { damageEnemy(e, spell.dmg, spell.elem); hitAny = true; }
+    }
+    if (G.boss) {
+      const d = dist(G.boss, p);
+      if (d <= spell.radius + G.boss.r) {
+        let angDiff = Math.atan2(G.boss.y-p.y, G.boss.x-p.x) - p.facing;
+        while (angDiff > Math.PI) angDiff -= TAU;
+        while (angDiff < -Math.PI) angDiff += TAU;
+        if (Math.abs(angDiff) < spell.angle/2) { damageBoss(spell.dmg, spell.elem); hitAny = true; }
+      }
+    }
+    G.shake = 6;
+    if (hitAny) addProf(spell.elem);
+  } else if (spell.type === 'healzone') {
+    // 水：圆形治疗领域，半径2单位，5s内每秒回复10血
+    G.healZones.push({x:p.x, y:p.y, r:spell.radius, healRate:spell.healRate, timer:0, life:spell.dur});
+    addParticles(p.x, p.y, '#42a5f5', 20, 3, 40);
+  } else if (spell.type === 'wall') {
+    // 土：正方形城墙，边长3单位，持续8s
+    G.walls.push({x:p.x, y:p.y, size:spell.size, hp:spell.wallHp, maxHp:spell.wallHp, life:spell.dur});
+    // 推斥敌人
+    for (const e of G.enemies) {
+      const d = dist(e, {x:p.x, y:p.y});
+      if (d < spell.size/2 + e.r + 10) {
+        const ang = Math.atan2(e.y-p.y, e.x-p.x);
+        e.vx += Math.cos(ang)*8; e.vy += Math.sin(ang)*8;
+        damageEnemy(e, 1, 'earth');
+      }
+    }
+    if (G.boss) {
+      const d = dist(G.boss, {x:p.x, y:p.y});
+      if (d < spell.size/2 + G.boss.r + 10) {
+        const ang = Math.atan2(G.boss.y-p.y, G.boss.x-p.x);
+        G.boss.vx += Math.cos(ang)*4; G.boss.vy += Math.sin(ang)*4;
+        damageBoss(1, 'earth');
+      }
+    }
+    addProf(spell.elem);
+  } else if (spell.type === 'summon') {
+    // 木：召唤树灵，血量20，嘲讽，每秒1伤害
+    G.treeSpirits.push({
+      x: p.x + Math.cos(p.facing)*40, y: p.y + Math.sin(p.facing)*40,
+      vx:0, vy:0, r:18, hp:spell.spiritHp, maxHp:spell.spiritHp, atkTimer:0,
+    });
+    addParticles(p.x, p.y, '#66bb6a', 25, 4, 40);
+  } else if (spell.type === 'chain') {
+    // 雷：连锁反应，先击中3单位内怪物A，后追击A 3单位内的B...直到重复或8次
+    const targets = [];
+    const hit = new Set();
+    let from = {x:p.x, y:p.y};
+    const allTargets = [...G.enemies];
+    if (G.boss) allTargets.push(G.boss);
+    for (let j=0; j<spell.maxJumps; j++) {
+      let nearest=null, md=spell.range;
+      for (const e of allTargets) {
+        if (hit.has(e)) continue;
+        const d = Math.hypot(e.x-from.x, e.y-from.y);
+        if (d < md) { md=d; nearest=e; }
+      }
+      if (!nearest) break;
+      hit.add(nearest);
+      targets.push({x1:from.x, y1:from.y, x2:nearest.x, y2:nearest.y});
+      if (nearest === G.boss) damageBoss(spell.dmg, 'thunder');
+      else damageEnemy(nearest, spell.dmg, 'thunder');
+      from = {x:nearest.x, y:nearest.y};
+    }
+    if (targets.length > 0) {
+      G.lineEffects.push({type:'chain', segs:targets, elem:'thunder', life:15, color:ELEMENTS.thunder.color});
+      G.shake = 5;
+      addProf(spell.elem);
+    }
+  } else if (spell.type === 'freeze') {
+    // 冰：冻结半径2单位内小怪6s/Boss 3s，造成3伤害
+    G.lineEffects.push({type:'circle', x:p.x, y:p.y, r:spell.radius, elem:spell.elem, life:20, color:ELEMENTS[spell.elem].color});
+    let hitAny = false;
+    for (const e of G.enemies) {
+      if (dist(e, p) < spell.radius + e.r) {
+        damageEnemy(e, spell.dmg, spell.elem);
+        e.freezeT = Math.max(e.freezeT, spell.freezeMon);
+        hitAny = true;
+      }
+    }
+    if (G.boss && dist(G.boss, p) < spell.radius + G.boss.r) {
+      damageBoss(spell.dmg, spell.elem);
+      G.boss.freezeT = Math.max(G.boss.freezeT || 0, spell.freezeBoss);
+      hitAny = true;
+    }
+    G.shake = 6;
+    if (hitAny) addProf(spell.elem);
+  }
+}
+
+function pointToLineDist(px, py, x1, y1, x2, y2) {
+  const dx = x2-x1, dy = y2-y1;
+  const len2 = dx*dx + dy*dy;
+  if (len2 < 0.001) return Math.hypot(px-x1, py-y1);
+  let t = ((px-x1)*dx + (py-y1)*dy) / len2;
+  t = clamp(t, 0, 1);
+  return Math.hypot(px - (x1+t*dx), py - (y1+t*dy));
+}
+
+function addProf(elem) {
+  G.proficiency[elem] = Math.min(PROF_MAX, (G.proficiency[elem] || 0) + PROF_PER_CAST);
+}
+
+function getProfMult(elem) {
+  return 1 + Math.floor((G.proficiency[elem] || 0) / 50) * PROF_BONUS_PER_50;
+}
+
+function showFeedback(text, color) {
+  G.fbText = text; G.fbColor = color; G.fbTimer = 60;
+}
+
+// ======================== 伤害与战斗 ========================
+function getDamageMultiplier(elem, target) {
+  if (target === G.boss) {
+    if (G.boss.immune === elem) return 0;
+    if (G.boss.weak === elem) return 1.5;
+    if (G.boss.resist === elem) return 0.5;
+    return 1;
+  }
+  const t = ENEMY_TYPES[target.type];
+  const eElem = t.elem;
+  if (COUNTERS[elem] === eElem) return 1.5;
+  if (COUNTERS[eElem] === elem) return 0.5;
+  return 1;
+}
+
+function damageEnemy(e, baseDmg, elem) {
+  if (e.hp <= 0) return;
+  const profMult = getProfMult(elem);
+  const mult = getDamageMultiplier(elem, e);
+  let dmg = Math.max(1, Math.round(baseDmg * mult * profMult));
+  e.hp -= dmg;
+  e.hitFlash = 8;
+  addFloatText(e.x, e.y - e.r - 5, String(dmg), mult > 1 ? '#ffeb3b' : '#fff');
+  if (mult > 1) addFloatText(e.x, e.y - e.r - 18, '克制', '#ff6b35');
+  if (e.hp <= 0) onEnemyDeath(e);
+}
+
+function damageBoss(baseDmg, elem) {
+  const b = G.boss;
+  if (!b || b.hp <= 0) return;
+  const profMult = getProfMult(elem);
+  const mult = getDamageMultiplier(elem, b);
+  if (mult === 0) {
+    addFloatText(b.x, b.y - b.r - 10, '免疫', '#888');
+    return;
+  }
+  let dmg = Math.max(1, Math.round(baseDmg * mult * profMult));
+  b.hp -= dmg;
+  b.hitFlash = 8;
+  addFloatText(b.x, b.y - b.r - 10, String(dmg), mult > 1 ? '#ffeb3b' : '#fff');
+  if (mult > 1) addFloatText(b.x, b.y - b.r - 25, 'Boss弱点！', '#ff6b35');
+}
+
+function onEnemyDeath(e) {
+  const t = ENEMY_TYPES[e.type];
+  G.kills++;
+  G.score += Math.round(t.hp * 2);
+  addParticles(e.x, e.y, ELEMENTS[t.elem].color, 20, 5, 40);
+  if (t.elite) {
+    for (let i = 0; i < 3; i++) spawnCrystal();
+  } else if (Math.random() < 0.5) {
+    spawnCrystal();
+  }
+}
+
+// ======================== 波次系统 ========================
+function startNextWave() {
+  G.wave++;
+  if (G.wave % BOSS_INTERVAL === 0 && !G.boss) {
+    spawnBoss('fairy');
+    G.waveActive = true;
+    G.spawnQueue = [];
+    document.getElementById('wave-tag').textContent = '第'+G.wave+'波 (Boss!)';
+    showFeedback('Boss出现：腐化妖精！', '#f44336');
+    G.shake = 12;
+    return;
+  }
+  const table = WAVE_TABLE[(G.wave-1) % WAVE_TABLE.length];
+  G.spawnQueue = [...table];
+  if (G.wave > WAVE_TABLE.length) {
+    const extra = Math.floor((G.wave - WAVE_TABLE.length) / 2) + 1;
+    for (let i = 0; i < extra; i++) {
+      G.spawnQueue.push(pick(Object.keys(ENEMY_TYPES)));
+    }
+  }
+  // Add elite monsters at the end of pre-boss waves
+  const cycleWave = (G.wave - 1) % BOSS_INTERVAL; // 0,1,2 before boss
+  const eliteCount = cycleWave + 1; // wave1=1, wave2=2, wave3=3
+  for (let i = 0; i < eliteCount; i++) {
+    G.spawnQueue.push('spirit');
+  }
+  G.waveActive = true;
+  G.spawnTimer = 0;
+  document.getElementById('wave-tag').textContent = '第' + G.wave + '波';
+}
+
+function spawnBoss(type) {
+  const t = BOSS_TYPES[type];
+  const hpMult = 1 + (G.adventureLevel - 1) * 0.3;
+  const ph0 = t.phases[0];
+  G.boss = {
+    type, x: W / 2, y: -60, vx: 0, vy: 0, r: t.r,
+    hp: t.hp * hpMult, maxHp: t.hp * hpMult,
+    facing: 0, hitFlash: 0,
+    phase: 0, phaseName: ph0.name,
+    weak: ph0.weak, resist: ph0.resist,
+    immune: ph0.immune, elemMode: ph0.elemMode,
+    summonCD: ph0.summonCD, summonTimer: ph0.summonCD,
+    atkCD: 90, moveT: 0, targetX: W/2, targetY: H/2, freezeT: 0,
+    elemSwitchT: 600,
+  };
+}
+
+function waveComplete() {
+  G.waveActive = false;
+  G.waveCD = 180;
+  for (let i=0; i<2; i++) {
+    spawnCrystal();
+  }
+  spawnHealPack();
+  showFeedback('第'+G.wave+'波完成！', '#4fc3f7');
+}
+
+// ======================== 输入处理 ========================
+window.addEventListener('keydown', e => {
+  G.keys[e.key.toLowerCase()] = true;
+  const n = parseInt(e.key);
+  if (n >= 1 && n <= 6) selectMaterial(ELEM_KEYS[n-1]);
+});
+window.addEventListener('keyup', e => { G.keys[e.key.toLowerCase()] = false; });
+
+// Mouse
+canvas.addEventListener('mousedown', e => {
+  if (G.state !== 'PLAYING' || G.paused) return;
+  G.isDrawing = true; G.drawId++;
+  G.gesturePts = [{x:e.clientX, y:e.clientY}];
+});
+canvas.addEventListener('mousemove', e => {
+  if (G.isDrawing && G.state === 'PLAYING') {
+    G.gesturePts.push({x:e.clientX, y:e.clientY});
+  }
+});
+canvas.addEventListener('mouseup', () => {
+  if (G.isDrawing) { finishGesture(); }
+});
+canvas.addEventListener('mouseleave', () => {
+  if (G.isDrawing) { finishGesture(); }
+});
+
+// Touch — 左半屏摇杆 / 右半屏画手势
+canvas.addEventListener('touchstart', e => {
+  e.preventDefault();
+  if (G.state !== 'PLAYING' || G.paused) return;
+  for (const t of e.changedTouches) {
+    if (t.clientX < W/2 && !G.joy.active) {
+      G.joy.active = true; G.joy.id = t.identifier;
+      G.joy.cx = t.clientX; G.joy.cy = t.clientY;
+      G.joy.dx = 0; G.joy.dy = 0;
+    } else if (t.clientX >= W/2 && !G.isDrawing) {
+      G.isDrawing = true; G.drawId++;
+      G.drawTouchId = t.identifier;
+      G.gesturePts = [{x:t.clientX, y:t.clientY}];
+    }
+  }
+}, {passive:false});
+
+canvas.addEventListener('touchmove', e => {
+  e.preventDefault();
+  for (const t of e.changedTouches) {
+    if (G.joy.active && t.identifier === G.joy.id) {
+      G.joy.dx = clamp(t.clientX - G.joy.cx, -55, 55);
+      G.joy.dy = clamp(t.clientY - G.joy.cy, -55, 55);
+    } else if (G.isDrawing && t.identifier === G.drawTouchId) {
+      G.gesturePts.push({x:t.clientX, y:t.clientY});
+    }
+  }
+}, {passive:false});
+
+function touchEnd(e) {
+  e.preventDefault();
+  for (const t of e.changedTouches) {
+    if (G.joy.active && t.identifier === G.joy.id) {
+      G.joy.active = false; G.joy.id = null;
+      G.joy.dx = 0; G.joy.dy = 0;
+    }
+    if (G.isDrawing && t.identifier === G.drawTouchId) {
+      finishGesture();
+      G.drawTouchId = null;
+    }
+  }
+}
+canvas.addEventListener('touchend', touchEnd, {passive:false});
+canvas.addEventListener('touchcancel', touchEnd, {passive:false});
+
+function finishGesture() {
+  G.isDrawing = false;
+  if (G.gesturePts.length > 5) {
+    const result = recognizeGesture(G.gesturePts);
+    if (result.type !== 'NONE' && result.score > 0.5) {
+      tryCastSpell(result.type);
+    } else if (G.gesturePts.length > 15) {
+      showFeedback('手势未识别', '#f44336');
+    }
+  }
+  G.gesturePts = [];
+}
+
+function selectMaterial(elem) {
+  G.selectedMat = elem;
+  updateMaterialUI();
+}
+
+// ======================== 更新逻辑 ========================
+function update() {
+  G.time++;
+  if (G.state !== 'PLAYING' || G.paused) return;
+  updatePlayer();
+  updateEnemies();
+  if (G.boss) updateBoss();
+  updateProjectiles();
+  updateParticles();
+  updateCrystals();
+  updateHealPacks();
+  updateWalls();
+  updateHealZones();
+  updateTreeSpirits();
+  updateLineEffects();
+  updateEvacPoint();
+  updateFloatTexts();
+  updateWaves();
+  if (G.shake > 0) G.shake *= 0.85;
+  if (G.fbTimer > 0) G.fbTimer--;
+}
+
+function updatePlayer() {
+  const p = G.player;
+  let dx=0, dy=0;
+  if (G.keys['w']||G.keys['arrowup']) dy--;
+  if (G.keys['s']||G.keys['arrowdown']) dy++;
+  if (G.keys['a']||G.keys['arrowleft']) dx--;
+  if (G.keys['d']||G.keys['arrowright']) dx++;
+  if (G.joy.active) { dx = G.joy.dx/55; dy = G.joy.dy/55; }
+  if (dx !== 0 || dy !== 0) {
+    const len = Math.hypot(dx, dy);
+    if (len > 1) { dx/=len; dy/=len; }
+    let spd = 3.5;
+    if (G.isDrawing) spd *= 0.8;
+    p.vx = lerp(p.vx, dx*spd, 0.3);
+    p.vy = lerp(p.vy, dy*spd, 0.3);
+    p.facing = Math.atan2(dy, dx);
+  } else {
+    p.vx *= 0.85; p.vy *= 0.85;
+  }
+  p.x = clamp(p.x + p.vx, p.r, W-p.r);
+  p.y = clamp(p.y + p.vy, p.r, H-p.r);
+  if (p.hitFlash > 0) p.hitFlash--;
+  if (p.shieldTimer > 0) { p.shieldTimer--; if (p.shieldTimer<=0) p.shield=0; }
+  if (p.hp <= 0) { gameOver(); }
+}
+
+function updateEnemies() {
+  const p = G.player;
+  for (let i = G.enemies.length-1; i >= 0; i--) {
+    const e = G.enemies[i];
+    const t = ENEMY_TYPES[e.type];
+    if (e.hitFlash > 0) e.hitFlash--;
+    if (e.slowT > 0) e.slowT--;
+    if (e.freezeT > 0) { e.freezeT--; e.vx*=0.5; e.vy*=0.5; e.x+=e.vx; e.y+=e.vy; continue; }
+    if (e.rootT > 0) { e.rootT--; e.vx*=0.8; e.vy*=0.8; e.x+=e.vx; e.y+=e.vy; continue; }
+    const spd = t.spd * (e.slowT>0 ? 0.4 : 1);
+    const d = Math.hypot(p.x-e.x, p.y-e.y);
+    // Taunt: target nearest tree spirit if within 2 units
+    let target = p;
+    for (const s of G.treeSpirits) {
+      if (dist(e, s) < 2*UNIT) { target = s; break; }
+    }
+    e.facing = Math.atan2(target.y-e.y, target.x-e.x);
+
+    if (t.ai === 'chase') {
+      e.vx = lerp(e.vx, Math.cos(e.facing)*spd, 0.1);
+      e.vy = lerp(e.vy, Math.sin(e.facing)*spd, 0.1);
+    } else if (t.ai === 'charge') {
+      if (e.chargeT > 0) { e.chargeT--; }
+      if (d < 250 && e.chargeT === 0) { e.chargeT = 60; }
+      if (e.chargeT > 30) {
+        e.vx = lerp(e.vx, Math.cos(e.facing)*spd*3, 0.2);
+        e.vy = lerp(e.vy, Math.sin(e.facing)*spd*3, 0.2);
+      } else {
+        e.vx = lerp(e.vx, Math.cos(e.facing)*spd*0.5, 0.1);
+        e.vy = lerp(e.vy, Math.sin(e.facing)*spd*0.5, 0.1);
+      }
+    } else if (t.ai === 'swarm') {
+      e.swarmAngle += 0.05;
+      const ang = e.facing + Math.sin(e.swarmAngle)*0.6;
+      e.vx = lerp(e.vx, Math.cos(ang)*spd, 0.1);
+      e.vy = lerp(e.vy, Math.sin(ang)*spd, 0.1);
+    } else if (t.ai === 'ranged') {
+      if (d > t.atkRange) {
+        e.vx = lerp(e.vx, Math.cos(e.facing)*spd, 0.1);
+        e.vy = lerp(e.vy, Math.sin(e.facing)*spd, 0.1);
+      } else if (d < t.atkRange*0.6) {
+        e.vx = lerp(e.vx, -Math.cos(e.facing)*spd, 0.1);
+        e.vy = lerp(e.vy, -Math.sin(e.facing)*spd, 0.1);
+      } else {
+        e.vx *= 0.9; e.vy *= 0.9;
+      }
+      e.atkCD--;
+      if (e.atkCD <= 0 && d < t.atkRange) {
+        e.atkCD = t.atkCD;
+        const ang = e.facing;
+        G.projectiles.push({
+          x:e.x, y:e.y, vx:Math.cos(ang)*2.5, vy:Math.sin(ang)*2.5,
+          dmg:8, elem:'wood', r:7, life:150, enemy:true, hitSet:new Set(),
+        });
+      }
+    }
+    e.x += e.vx; e.y += e.vy;
+    e.x = clamp(e.x, e.r, W-e.r);
+    e.y = clamp(e.y, e.r, H-e.r);
+
+    // Wall collision: enemies can't pass through
+    for (const w of G.walls) {
+      const hw = w.size/2;
+      if (e.x > w.x-hw-e.r && e.x < w.x+hw+e.r && e.y > w.y-hw-e.r && e.y < w.y+hw+e.r) {
+        const dx = e.x - w.x, dy = e.y - w.y;
+        if (Math.abs(dx) > Math.abs(dy)) {
+          e.x = dx > 0 ? w.x+hw+e.r : w.x-hw-e.r;
+          e.vx = -e.vx * 0.3;
+        } else {
+          e.y = dy > 0 ? w.y+hw+e.r : w.y-hw-e.r;
+          e.vy = -e.vy * 0.3;
+        }
+        // Wall takes damage from contact
+        w.hp -= 5;
+      }
+    }
+
+    // Collision with tree spirits (enemies attack them)
+    for (const s of G.treeSpirits) {
+      if (dist(e, s) < e.r + s.r) {
+        s.hp -= t.dmg * 0.1; // gradual damage per frame of contact
+        const ang = Math.atan2(s.y-e.y, s.x-e.x);
+        e.vx -= Math.cos(ang)*2; e.vy -= Math.sin(ang)*2;
+      }
+    }
+
+    // Collision with player
+    if (target === p && dist(e, p) < e.r + p.r) {
+      if (p.hitFlash <= 0) {
+        let dmg = t.dmg;
+        if (p.shield > 0) {
+          const absorbed = Math.min(p.shield, dmg);
+          p.shield -= absorbed; dmg -= absorbed;
+        }
+        p.hp -= dmg;
+        p.hitFlash = 30;
+        G.shake = 6;
+        addFloatText(p.x, p.y-25, '-'+Math.round(t.dmg), '#f44336');
+      }
+      // Knockback
+      const ang = Math.atan2(p.y-e.y, p.x-e.x);
+      p.vx += Math.cos(ang)*3; p.vy += Math.sin(ang)*3;
+      e.vx -= Math.cos(ang)*3; e.vy -= Math.sin(ang)*3;
+    }
+
+    if (e.hp <= 0) {
+      G.enemies.splice(i, 1);
+    }
+  }
+}
+
+function updateProjectiles() {
+  const p = G.player;
+  for (let i = G.projectiles.length-1; i >= 0; i--) {
+    const pr = G.projectiles[i];
+    pr.life--;
+    if (pr.type === 'aoe' || pr.type === 'chain') {
+      if (pr.life <= 0) G.projectiles.splice(i, 1);
+      continue;
+    }
+    pr.x += pr.vx; pr.y += pr.vy;
+    if (pr.range) {
+      pr.traveled = (pr.traveled||0) + Math.hypot(pr.vx, pr.vy);
+      if (pr.traveled > pr.range) pr.life = 0;
+    }
+    // Wall blocking: player projectiles can't pass through walls
+    if (!pr.enemy && isInsideWall(pr.x, pr.y)) {
+      pr.life = 0;
+      addParticles(pr.x, pr.y, '#8d6e63', 5, 2, 15);
+    }
+    if (!pr.enemy) {
+      for (const e of G.enemies) {
+        if (pr.hitSet.has(e)) continue;
+        if (dist(pr, e) < pr.r + e.r) {
+          pr.hitSet.add(e);
+          damageEnemy(e, pr.dmg, pr.elem);
+          if (pr.splash) {
+            for (const e2 of G.enemies) {
+              if (pr.hitSet.has(e2)) continue;
+              if (dist(e, e2) < e.r + e2.r) {
+                pr.hitSet.add(e2);
+                damageEnemy(e2, pr.dmg, pr.elem);
+                addParticles(e2.x, e2.y, ELEMENTS[pr.elem].color, 6, 3, 15);
+              }
+            }
+          }
+          if (pr.fx === 'bind') { e.rootT = 5*60; addFloatText(e.x, e.y-e.r-5, '束缚', '#66bb6a'); }
+          addParticles(pr.x, pr.y, ELEMENTS[pr.elem].color, 8, 3, 20);
+          addProf(pr.elem);
+          if (pr.canSplit) splitEarth(pr);
+          pr.life = 0; break;
+        }
+      }
+      if (G.boss && !pr.hitSet.has(G.boss) && dist(pr, G.boss) < pr.r + G.boss.r) {
+        pr.hitSet.add(G.boss);
+        damageBoss(pr.dmg, pr.elem);
+        addParticles(pr.x, pr.y, ELEMENTS[pr.elem].color, 12, 4, 25);
+        addProf(pr.elem);
+        if (pr.canSplit) splitEarth(pr);
+        pr.life = 0;
+      }
+    } else {
+      if (dist(pr, p) < pr.r + p.r && !pr.hitSet.has(p)) {
+        pr.hitSet.add(p);
+        let dmg = pr.dmg;
+        if (p.shield > 0) { const a = Math.min(p.shield, dmg); p.shield -= a; dmg -= a; }
+        p.hp -= dmg; p.hitFlash = 20; G.shake = 4;
+        addFloatText(p.x, p.y-25, '-'+Math.round(pr.dmg), '#f44336');
+        pr.life = 0;
+      }
+    }
+    if (pr.x < -50 || pr.x > W+50 || pr.y < -50 || pr.y > H+50) pr.life = 0;
+    if (pr.life <= 0) {
+      if (!pr.enemy) addParticles(pr.x, pr.y, ELEMENTS[pr.elem].color, 5, 2, 15);
+      G.projectiles.splice(i, 1);
+    }
+  }
+}
+
+function splitEarth(pr) {
+  // Split into 4 fragments: NE, NW, SE, SW relative to initial direction
+  const baseAng = pr.splitDir || 0;
+  const dirs = [baseAng + Math.PI/4, baseAng - Math.PI/4, baseAng + Math.PI*3/4, baseAng - Math.PI*3/4];
+  for (const d of dirs) {
+    G.projectiles.push({
+      x:pr.x, y:pr.y, vx:Math.cos(d)*5, vy:Math.sin(d)*5,
+      dmg:1, elem:pr.elem, r:5, life:300, range:null, traveled:0,
+      hitSet:new Set(), canSplit:false,
+    });
+  }
+  addParticles(pr.x, pr.y, ELEMENTS[pr.elem].color, 12, 4, 25);
+}
+
+function updateParticles() {
+  for (let i = G.particles.length-1; i >= 0; i--) {
+    const p = G.particles[i];
+    p.x += p.vx; p.y += p.vy;
+    p.vx *= 0.94; p.vy *= 0.94;
+    p.life--;
+    if (p.life <= 0) G.particles.splice(i, 1);
+  }
+}
+
+function updateCrystals() {
+  const p = G.player;
+  for (let i = G.crystals.length-1; i >= 0; i--) {
+    const c = G.crystals[i];
+    c.pulse += 0.08;
+    if (dist(c, p) < c.r + p.r) {
+      G.materials[c.elem] = (G.materials[c.elem]||0) + 3;
+      addFloatText(c.x, c.y, '+'+ELEMENTS[c.elem].name+'x3', ELEMENTS[c.elem].color);
+      addParticles(c.x, c.y, ELEMENTS[c.elem].color, 10, 3, 25);
+      G.crystals.splice(i, 1);
+      updateMaterialUI();
+      continue;
+    }
+  }
+}
+
+function updateHealPacks() {
+  const p = G.player;
+  for (let i = G.healPacks.length-1; i >= 0; i--) {
+    const h = G.healPacks[i];
+    h.pulse += 0.08;
+    if (dist(h, p) < h.r + p.r) {
+      const heal = Math.min(20, p.maxHp - p.hp);
+      p.hp += heal;
+      addFloatText(p.x, p.y-20, '+'+heal+' HP', '#66bb6a');
+      addParticles(h.x, h.y, '#66bb6a', 15, 4, 30);
+      G.healPacks.splice(i, 1);
+    }
+  }
+}
+
+function updateFloatTexts() {
+  for (let i = G.floatTexts.length-1; i >= 0; i--) {
+    const t = G.floatTexts[i];
+    t.y += t.vy; t.life--;
+    if (t.life <= 0) G.floatTexts.splice(i, 1);
+  }
+}
+
+function updateWalls() {
+  for (let i = G.walls.length-1; i >= 0; i--) {
+    const w = G.walls[i];
+    w.life--;
+    if (w.hp <= 0 || w.life <= 0) {
+      addParticles(w.x, w.y, '#8d6e63', 15, 4, 30);
+      G.walls.splice(i, 1);
+    }
+  }
+}
+
+function updateHealZones() {
+  const p = G.player;
+  for (let i = G.healZones.length-1; i >= 0; i--) {
+    const z = G.healZones[i];
+    z.life--;
+    z.timer++;
+    if (z.timer >= 60) {
+      z.timer = 0;
+      if (dist(z, p) < z.r + p.r) {
+        const heal = Math.min(z.healRate, p.maxHp - p.hp);
+        if (heal > 0) {
+          p.hp += heal;
+          addFloatText(p.x, p.y-20, '+'+heal, '#42a5f5');
+          addProf('water');
+        }
+      }
+    }
+    if (z.life <= 0) {
+      addParticles(z.x, z.y, '#42a5f5', 10, 2, 20);
+      G.healZones.splice(i, 1);
+    }
+  }
+}
+
+function updateTreeSpirits() {
+  for (let i = G.treeSpirits.length-1; i >= 0; i--) {
+    const s = G.treeSpirits[i];
+    s.atkTimer++;
+    // 每2秒(120帧)对1单位内敌人造成2伤害
+    if (s.atkTimer >= 120) {
+      s.atkTimer = 0;
+      for (const e of G.enemies) {
+        if (dist(e, s) < UNIT + e.r) {
+          damageEnemy(e, 2, 'wood');
+          addParticles(e.x, e.y, '#66bb6a', 5, 3, 20);
+        }
+      }
+      if (G.boss && dist(G.boss, s) < UNIT + G.boss.r) {
+        damageBoss(2, 'wood');
+      }
+      addProf('wood');
+    }
+    if (s.hp <= 0) {
+      addParticles(s.x, s.y, '#66bb6a', 20, 5, 40);
+      G.treeSpirits.splice(i, 1);
+    }
+  }
+}
+
+function updateLineEffects() {
+  for (let i = G.lineEffects.length-1; i >= 0; i--) {
+    const le = G.lineEffects[i];
+    le.life--;
+    // Water line: continuous damage during 1s persistence
+    if (le.type === 'water' && le.dmg) {
+      for (const e of G.enemies) {
+        if (e.waterCD > 0) { e.waterCD--; continue; }
+        if (pointToLineDist(e.x, e.y, le.x1, le.y1, le.x2, le.y2) < e.r + 10) {
+          damageEnemy(e, le.dmg, le.elem);
+          e.waterCD = 48;
+        }
+      }
+      if (G.boss) {
+        if (G.boss.waterCD > 0) G.boss.waterCD--;
+        else if (pointToLineDist(G.boss.x, G.boss.y, le.x1, le.y1, le.x2, le.y2) < G.boss.r + 10) {
+          damageBoss(le.dmg, le.elem);
+          G.boss.waterCD = 48;
+        }
+      }
+    }
+    if (le.life <= 0) G.lineEffects.splice(i, 1);
+  }
+}
+
+function updateWaves() {
+  if (!G.waveActive) {
+    G.waveCD--;
+    if (G.waveCD <= 0) startNextWave();
+    return;
+  }
+  if (G.boss) return; // Boss波次由Boss控制
+  if (G.spawnQueue.length > 0) {
+    G.spawnTimer--;
+    if (G.spawnTimer <= 0) {
+      spawnEnemy(G.spawnQueue.shift());
+      G.spawnTimer = 40 + Math.random()*30;
+    }
+  } else if (G.enemies.length === 0) {
+    waveComplete();
+  }
+}
+
+function updateBoss() {
+  const b = G.boss;
+  if (!b) return;
+  const p = G.player;
+  const def = BOSS_TYPES[b.type];
+  const phases = def.phases;
+  const hpPct = b.hp / b.maxHp;
+
+  // Phase transition
+  for (let i = phases.length - 1; i >= 0; i--) {
+    if (hpPct <= phases[i].hpPct && b.phase < i) {
+      b.phase = i;
+      const ph = phases[i];
+      b.phaseName = ph.name;
+      b.weak = ph.weak; b.resist = ph.resist;
+      b.immune = ph.immune; b.elemMode = ph.elemMode;
+      b.summonCD = ph.summonCD; b.summonTimer = ph.summonCD;
+      showFeedback('Boss进入：' + ph.name + '！', '#ff6b35');
+      G.shake = 10;
+      addParticles(b.x, b.y, '#ff6b35', 30, 6, 50);
+      break;
+    }
+  }
+  const phase = phases[b.phase];
+
+  // Element switch every 10s (fire <-> thunder)
+  b.elemSwitchT--;
+  if (b.elemSwitchT <= 0) {
+    b.elemSwitchT = 600;
+    const cur = b.elemMode;
+    b.elemMode = (cur === 'fire') ? 'thunder' : 'fire';
+    showFeedback('妖精切换为' + (b.elemMode === 'fire' ? '火' : '雷') + '属性！', b.elemMode === 'fire' ? '#ff6b35' : '#ab47bc');
+    addParticles(b.x, b.y, ELEMENTS[b.elemMode].color, 25, 5, 40);
+  }
+
+  // Freeze check
+  if (b.freezeT > 0) { b.freezeT--; b.hitFlash = Math.max(b.hitFlash, 2); return; }
+
+  // Movement
+  b.moveT--;
+  if (b.moveT <= 0) {
+    b.targetX = clamp(p.x + rand(-150, 150), 60, W - 60);
+    b.targetY = clamp(p.y + rand(-100, 100), 60, H - 60);
+    b.moveT = 120;
+  }
+  const spdMult = phase.spdMult || 1;
+  const spd = def.spd * spdMult;
+  const dx = b.targetX - b.x, dy = b.targetY - b.y;
+  const d = Math.hypot(dx, dy);
+  if (d > 5) {
+    b.vx = lerp(b.vx, (dx / d) * spd, 0.05);
+    b.vy = lerp(b.vy, (dy / d) * spd, 0.05);
+  }
+  b.x = clamp(b.x + b.vx, b.r, W - b.r);
+  b.y = clamp(b.y + b.vy, b.r, H - b.r);
+  b.facing = Math.atan2(p.y - b.y, p.x - b.x);
+  if (b.hitFlash > 0) b.hitFlash--;
+
+  // Summon minions
+  b.summonTimer--;
+  if (b.summonTimer <= 0) {
+    b.summonTimer = b.summonCD;
+    const summonType = phase.summon;
+    for (let i = 0; i < 2; i++) {
+      const ang = rand(0, TAU);
+      const sx = b.x + Math.cos(ang) * 50, sy = b.y + Math.sin(ang) * 50;
+      const t = ENEMY_TYPES[summonType];
+      const hpScale = 1 + (G.adventureLevel - 1) * 0.15;
+      G.enemies.push({
+        type: summonType, x: sx, y: sy, vx: 0, vy: 0, r: t.r,
+        hp: t.hp * hpScale, maxHp: t.hp * hpScale,
+        facing: 0, hitFlash: 0, slowT: 0, freezeT: 0, rootT: 0,
+        atkCD: t.atkCD || 0, chargeT: 0, swarmAngle: rand(0, TAU),
+      });
+      addParticles(sx, sy, ELEMENTS[t.elem].color, 8, 3, 25);
+    }
+    showFeedback('Boss召唤了' + ENEMY_TYPES[summonType].name + '！', '#ff9800');
+  }
+
+  // Boss ranged attack (medium speed, scatter in狂暴)
+  b.atkCD--;
+  if (b.atkCD <= 0) {
+    b.atkCD = 90;
+    const dmgMult = phase.dmgMult || 1;
+    const ang = b.facing;
+    if (phase.scatter) {
+      // 3-way scatter
+      for (const da of [-0.3, 0, 0.3]) {
+        G.projectiles.push({
+          x: b.x, y: b.y, vx: Math.cos(ang+da)*3, vy: Math.sin(ang+da)*3,
+          dmg: def.dmg * dmgMult, elem: b.elemMode, r: 10, life: 120, enemy: true, hitSet: new Set(),
+        });
+      }
+    } else {
+      G.projectiles.push({
+        x: b.x, y: b.y, vx: Math.cos(ang)*3, vy: Math.sin(ang)*3,
+        dmg: def.dmg * dmgMult, elem: b.elemMode, r: 10, life: 120, enemy: true, hitSet: new Set(),
+      });
+    }
+  }
+
+  // Contact damage
+  if (dist(b, p) < b.r + p.r && p.hitFlash <= 0) {
+    const dmgMult = phase.dmgMult || 1;
+    let dmg = def.dmg * dmgMult;
+    if (p.shield > 0) { const a = Math.min(p.shield, dmg); p.shield -= a; dmg -= a; }
+    p.hp -= dmg; p.hitFlash = 30; G.shake = 8;
+    addFloatText(p.x, p.y - 25, '-' + Math.round(def.dmg * dmgMult), '#f44336');
+  }
+
+  // Boss death
+  if (b.hp <= 0) {
+    onBossDeath();
+  }
+}
+
+function updateEvacPoint() {
+  if (!G.evacPoint) return;
+  const e = G.evacPoint;
+  e.pulse += 0.05;
+  const p = G.player;
+  if (dist(e, p) < e.r + p.r) {
+    evacuate();
+  }
+}
+
+function onBossDeath() {
+  const b = G.boss;
+  G.score += 500;
+  G.kills++;
+  addParticles(b.x, b.y, '#ff6b35', 60, 8, 60);
+  addParticles(b.x, b.y, '#ffeb3b', 40, 6, 50);
+  G.shake = 20;
+  // Drop random crystals
+  for (let i = 0; i < 12; i++) {
+    spawnCrystal();
+  }
+  // Spawn evacuation point
+  spawnHealPack();
+  G.evacPoint = { x: W / 2, y: H / 2, r: 30, pulse: 0 };
+  showFeedback('Boss已击败！前往光圈撤离', '#4fc3f7');
+  G.boss = null;
+  G.waveActive = false;
+
+  // Adventure level up
+  G.adventureLevel++;
+  saveAdventureLevel();
+  showFeedback('冒险等级提升至 ' + G.adventureLevel + '！', '#ffeb3b');
+}
+
+function evacuate() {
+  G.evacPoint = null;
+  const bonus = 200 + G.wave * 50;
+  G.score += bonus;
+  gameOver(true);
+}
+
+function saveAdventureLevel() {
+  try { localStorage.setItem(ADV_KEY, String(G.adventureLevel)); } catch(e) {}
+}
+
+function loadAdventureLevel() {
+  try {
+    const v = parseInt(localStorage.getItem(ADV_KEY));
+    if (v && v >= 1) G.adventureLevel = v;
+  } catch(e) {}
+}
+
+// ======================== 渲染 ========================
+function render() {
+  const sx = G.shake > 0.5 ? (Math.random()-0.5)*G.shake : 0;
+  const sy = G.shake > 0.5 ? (Math.random()-0.5)*G.shake : 0;
+
+  ctx.fillStyle = '#0d1117';
+  ctx.fillRect(0, 0, W, H);
+  drawGrid(sx, sy);
+
+  ctx.save();
+  ctx.translate(sx, sy);
+
+  drawCrystals();
+  drawHealPacks();
+  drawEvacPoint();
+  drawHealZones();
+  drawWalls();
+  drawParticles();
+  drawEnemies();
+  drawTreeSpirits();
+  drawBoss();
+  drawProjectiles();
+  drawLineEffects();
+  drawPlayer();
+  drawFloatTexts();
+  drawGestureHint();
+  drawJoystick();
+  drawGesture();
+
+  ctx.restore();
+  updateHUD();
+}
+
+function drawGrid(sx, sy) {
+  const step = 50;
+  ctx.strokeStyle = '#1a2030';
+  ctx.lineWidth = 1;
+  const ox = (-sx % step + step) % step;
+  const oy = (-sy % step + step) % step;
+  ctx.beginPath();
+  for (let x=ox; x<W; x+=step) { ctx.moveTo(x, 0); ctx.lineTo(x, H); }
+  for (let y=oy; y<H; y+=step) { ctx.moveTo(0, y); ctx.lineTo(W, y); }
+  ctx.stroke();
+}
+
+function drawPlayer() {
+  const p = G.player;
+  if (!p) return;
+  // Shield
+  if (p.shield > 0) {
+    ctx.strokeStyle = 'rgba(121,134,203,'+(0.4+0.3*Math.sin(G.time*0.15))+')';
+    ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.arc(p.x, p.y, p.r+8, 0, TAU); ctx.stroke();
+  }
+  // Body
+  ctx.fillStyle = p.hitFlash > 0 ? '#fff' : '#42a5f5';
+  ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, TAU); ctx.fill();
+  ctx.strokeStyle = '#90caf9'; ctx.lineWidth = 2; ctx.stroke();
+  // Direction
+  ctx.strokeStyle = '#fff'; ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.moveTo(p.x, p.y);
+  ctx.lineTo(p.x+Math.cos(p.facing)*p.r*1.4, p.y+Math.sin(p.facing)*p.r*1.4);
+  ctx.stroke();
+  // Selected element indicator
+  ctx.fillStyle = ELEMENTS[G.selectedMat].color;
+  ctx.beginPath(); ctx.arc(p.x, p.y-p.r-6, 4, 0, TAU); ctx.fill();
+}
+
+function drawEnemies() {
+  for (const e of G.enemies) {
+    const t = ENEMY_TYPES[e.type];
+    const elemColor = ELEMENTS[t.elem].color;
+    let color = elemColor;
+    if (e.hitFlash > 0) color = '#fff';
+    else if (e.freezeT > 0) color = '#81d4fa';
+    else if (e.slowT > 0) color = lerpColor(elemColor, '#42a5f5', 0.4);
+    ctx.fillStyle = color;
+    ctx.shadowColor = elemColor; ctx.shadowBlur = 8;
+    ctx.beginPath(); ctx.arc(e.x, e.y, e.r, 0, TAU); ctx.fill();
+    ctx.shadowBlur = 0;
+    ctx.strokeStyle = 'rgba(0,0,0,0.4)'; ctx.lineWidth = 2; ctx.stroke();
+    // Elite ring
+    if (t.elite) {
+      ctx.strokeStyle = '#ffeb3b'; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(e.x, e.y, e.r+4, 0, TAU); ctx.stroke();
+    }
+    // Eyes
+    ctx.fillStyle = '#000';
+    const ex = Math.cos(e.facing)*e.r*0.3, ey = Math.sin(e.facing)*e.r*0.3;
+    ctx.beginPath();
+    ctx.arc(e.x+ex-e.r*0.3, e.y+ey-e.r*0.2, 2, 0, TAU);
+    ctx.arc(e.x+ex+e.r*0.3, e.y+ey-e.r*0.2, 2, 0, TAU);
+    ctx.fill();
+    // HP bar
+    if (e.hp < e.maxHp) {
+      const bw = e.r*2, bh = 4;
+      ctx.fillStyle = 'rgba(0,0,0,0.6)';
+      ctx.fillRect(e.x-bw/2, e.y-e.r-10, bw, bh);
+      ctx.fillStyle = e.hp/e.maxHp > 0.3 ? '#66bb6a' : '#f44336';
+      ctx.fillRect(e.x-bw/2, e.y-e.r-10, bw*(e.hp/e.maxHp), bh);
+    }
+    // Root effect
+    if (e.rootT > 0) {
+      ctx.strokeStyle = '#689f38'; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(e.x, e.y, e.r+4, 0, TAU); ctx.stroke();
+    }
+  }
+}
+
+function drawBoss() {
+  const b = G.boss;
+  if (!b) return;
+  const def = BOSS_TYPES[b.type];
+  let color = ELEMENTS[b.elemMode || 'fire'].color;
+  if (b.hitFlash > 0) color = '#fff';
+  // Body with pulsing aura
+  const pulse = 1 + 0.05 * Math.sin(G.time * 0.1);
+  ctx.save();
+  ctx.translate(b.x, b.y);
+  ctx.scale(pulse, pulse);
+  // Aura
+  ctx.shadowColor = color; ctx.shadowBlur = 20;
+  ctx.fillStyle = color;
+  ctx.beginPath(); ctx.arc(0, 0, b.r, 0, TAU); ctx.fill();
+  ctx.shadowBlur = 0;
+  // Wings
+  ctx.fillStyle = 'rgba(255,255,255,0.3)';
+  ctx.beginPath();
+  ctx.ellipse(-b.r*0.8, 0, b.r*0.6, b.r*0.3, -0.4, 0, TAU);
+  ctx.ellipse(b.r*0.8, 0, b.r*0.6, b.r*0.3, 0.4, 0, TAU);
+  ctx.fill();
+  // Eyes
+  ctx.fillStyle = '#ff1744';
+  const ex = Math.cos(b.facing) * b.r * 0.3, ey = Math.sin(b.facing) * b.r * 0.3;
+  ctx.beginPath();
+  ctx.arc(ex - b.r * 0.3, ey - b.r * 0.15, 4, 0, TAU);
+  ctx.arc(ex + b.r * 0.3, ey - b.r * 0.15, 4, 0, TAU);
+  ctx.fill();
+  ctx.restore();
+  // Phase indicator
+  ctx.fillStyle = '#ff6b35'; ctx.font = 'bold 13px sans-serif'; ctx.textAlign = 'center';
+  ctx.fillText(b.phaseName, b.x, b.y - b.r - 16);
+}
+
+function drawEvacPoint() {
+  const e = G.evacPoint;
+  if (!e) return;
+  const s = 1 + 0.2 * Math.sin(e.pulse);
+  ctx.save();
+  ctx.translate(e.x, e.y);
+  ctx.scale(s, s);
+  ctx.shadowColor = '#4fc3f7'; ctx.shadowBlur = 25;
+  ctx.strokeStyle = '#4fc3f7'; ctx.lineWidth = 4;
+  ctx.beginPath(); ctx.arc(0, 0, e.r, 0, TAU); ctx.stroke();
+  ctx.globalAlpha = 0.2; ctx.fillStyle = '#4fc3f7';
+  ctx.beginPath(); ctx.arc(0, 0, e.r, 0, TAU); ctx.fill();
+  ctx.globalAlpha = 1; ctx.shadowBlur = 0;
+  ctx.fillStyle = '#4fc3f7'; ctx.font = 'bold 12px sans-serif'; ctx.textAlign = 'center';
+  ctx.fillText('撤离', 0, 4);
+  ctx.restore();
+}
+
+function drawProjectiles() {
+  for (const pr of G.projectiles) {
+    if (pr.type === 'aoe') {
+      const alpha = pr.life/25;
+      ctx.strokeStyle = ELEMENTS[pr.elem].color;
+      ctx.globalAlpha = alpha;
+      ctx.lineWidth = 4;
+      ctx.beginPath(); ctx.arc(pr.x, pr.y, pr.r, 0, TAU); ctx.stroke();
+      ctx.globalAlpha = alpha*0.2;
+      ctx.fillStyle = ELEMENTS[pr.elem].color;
+      ctx.fill();
+      ctx.globalAlpha = 1;
+    } else if (pr.type === 'chain') {
+      ctx.strokeStyle = '#fff176'; ctx.lineWidth = 3;
+      ctx.shadowColor = '#ffeb3b'; ctx.shadowBlur = 10;
+      ctx.beginPath();
+      for (const s of pr.segs) { ctx.moveTo(s.x1, s.y1); ctx.lineTo(s.x2, s.y2); }
+      ctx.stroke();
+      ctx.shadowBlur = 0;
+    } else {
+      const color = pr.enemy ? '#689f38' : ELEMENTS[pr.elem].color;
+      ctx.fillStyle = color;
+      ctx.shadowColor = color; ctx.shadowBlur = 10;
+      ctx.beginPath(); ctx.arc(pr.x, pr.y, pr.r, 0, TAU); ctx.fill();
+      ctx.shadowBlur = 0;
+    }
+  }
+}
+
+function drawWalls() {
+  for (const w of G.walls) {
+    const hw = w.size/2;
+    const hpPct = w.hp / w.maxHp;
+    ctx.fillStyle = 'rgba(141,110,99,'+(0.3+0.3*hpPct)+')';
+    ctx.fillRect(w.x-hw, w.y-hw, w.size, w.size);
+    ctx.strokeStyle = '#8d6e63'; ctx.lineWidth = 4;
+    ctx.strokeRect(w.x-hw, w.y-hw, w.size, w.size);
+    // HP indicator
+    ctx.fillStyle = 'rgba(0,0,0,0.5)';
+    ctx.fillRect(w.x-hw, w.y-hw-8, w.size, 4);
+    ctx.fillStyle = hpPct > 0.3 ? '#8d6e63' : '#f44336';
+    ctx.fillRect(w.x-hw, w.y-hw-8, w.size*hpPct, 4);
+    // Crack pattern if low HP
+    if (hpPct < 0.4) {
+      ctx.strokeStyle = 'rgba(0,0,0,0.4)'; ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(w.x-hw*0.5, w.y-hw); ctx.lineTo(w.x, w.y); ctx.lineTo(w.x+hw*0.3, w.y+hw*0.5);
+      ctx.stroke();
+    }
+  }
+}
+
+function drawHealZones() {
+  for (const z of G.healZones) {
+    const a = Math.min(1, z.life/60);
+    ctx.globalAlpha = a * (0.2 + 0.1*Math.sin(G.time*0.1));
+    ctx.fillStyle = '#42a5f5';
+    ctx.beginPath(); ctx.arc(z.x, z.y, z.r, 0, TAU); ctx.fill();
+    ctx.globalAlpha = a * 0.6;
+    ctx.strokeStyle = '#42a5f5'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(z.x, z.y, z.r, 0, TAU); ctx.stroke();
+    ctx.globalAlpha = 1;
+  }
+}
+
+function drawTreeSpirits() {
+  for (const s of G.treeSpirits) {
+    // Body
+    ctx.fillStyle = '#2e7d32';
+    ctx.shadowColor = '#66bb6a'; ctx.shadowBlur = 10;
+    ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, TAU); ctx.fill();
+    ctx.shadowBlur = 0;
+    ctx.strokeStyle = '#1b5e20'; ctx.lineWidth = 2; ctx.stroke();
+    // Eyes
+    ctx.fillStyle = '#aed581';
+    ctx.beginPath();
+    ctx.arc(s.x-5, s.y-3, 3, 0, TAU);
+    ctx.arc(s.x+5, s.y-3, 3, 0, TAU);
+    ctx.fill();
+    // HP bar
+    if (s.hp < s.maxHp) {
+      const bw = s.r*2, bh = 4;
+      ctx.fillStyle = 'rgba(0,0,0,0.6)';
+      ctx.fillRect(s.x-bw/2, s.y-s.r-10, bw, bh);
+      ctx.fillStyle = '#66bb6a';
+      ctx.fillRect(s.x-bw/2, s.y-s.r-10, bw*(s.hp/s.maxHp), bh);
+    }
+  }
+}
+
+function drawLineEffects() {
+  for (const le of G.lineEffects) {
+    const a = le.life / 20;
+    ctx.globalAlpha = a;
+    ctx.strokeStyle = le.color; ctx.lineWidth = 5;
+    ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    ctx.shadowColor = le.color; ctx.shadowBlur = 15;
+    if (le.type === 'zigzag') {
+      ctx.lineWidth = le.width || 5;
+      ctx.beginPath();
+      ctx.moveTo(le.segs[0].x1, le.segs[0].y1);
+      for (const s of le.segs) ctx.lineTo(s.x2, s.y2);
+      ctx.stroke();
+    } else if (le.type === 'fan') {
+      ctx.fillStyle = le.color;
+      ctx.globalAlpha = a * 0.3;
+      ctx.beginPath();
+      ctx.moveTo(le.x, le.y);
+      ctx.arc(le.x, le.y, le.radius, le.ang - le.angle/2, le.ang + le.angle/2);
+      ctx.closePath(); ctx.fill();
+      ctx.globalAlpha = a;
+      ctx.strokeStyle = le.color; ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(le.x, le.y, le.radius, le.ang - le.angle/2, le.ang + le.angle/2);
+      ctx.lineTo(le.x, le.y); ctx.closePath(); ctx.stroke();
+    } else if (le.type === 'circle') {
+      ctx.strokeStyle = le.color; ctx.lineWidth = 4;
+      ctx.beginPath(); ctx.arc(le.x, le.y, le.r, 0, TAU); ctx.stroke();
+      ctx.globalAlpha = a * 0.15; ctx.fillStyle = le.color;
+      ctx.beginPath(); ctx.arc(le.x, le.y, le.r, 0, TAU); ctx.fill();
+    } else if (le.type === 'magicCircle') {
+      ctx.strokeStyle = le.color; ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.arc(le.x, le.y, le.r, 0, TAU); ctx.stroke();
+      ctx.beginPath(); ctx.arc(le.x, le.y, le.r*0.6, 0, TAU); ctx.stroke();
+      ctx.globalAlpha = a * 0.2; ctx.fillStyle = le.color;
+      ctx.beginPath(); ctx.arc(le.x, le.y, le.r, 0, TAU); ctx.fill();
+    } else if (le.type === 'chain') {
+      ctx.strokeStyle = le.color; ctx.lineWidth = 4;
+      ctx.beginPath();
+      for (const s of le.segs) { ctx.moveTo(s.x1, s.y1); ctx.lineTo(s.x2, s.y2); }
+      ctx.stroke();
+    } else {
+      // Simple line (water)
+      ctx.lineWidth = le.width || 5;
+      ctx.beginPath();
+      ctx.moveTo(le.x1, le.y1); ctx.lineTo(le.x2, le.y2);
+      ctx.stroke();
+    }
+    ctx.shadowBlur = 0; ctx.globalAlpha = 1;
+  }
+}
+
+function drawParticles() {
+  for (const p of G.particles) {
+    const a = p.life / p.maxLife;
+    ctx.globalAlpha = a;
+    ctx.fillStyle = p.color;
+    ctx.beginPath(); ctx.arc(p.x, p.y, p.r*a, 0, TAU); ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+}
+
+function drawCrystals() {
+  for (const c of G.crystals) {
+    const s = 1 + 0.2*Math.sin(c.pulse);
+    const col = ELEMENTS[c.elem].color;
+    ctx.save();
+    ctx.translate(c.x, c.y);
+    ctx.rotate(Math.PI/4);
+    ctx.scale(s, s);
+    ctx.fillStyle = col;
+    ctx.shadowColor = col; ctx.shadowBlur = 15;
+    ctx.fillRect(-c.r/1.4, -c.r/1.4, c.r*1.4, c.r*1.4);
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = 'rgba(255,255,255,0.5)';
+    ctx.fillRect(-c.r/2.8, -c.r/2.8, c.r/2, c.r/2);
+    ctx.restore();
+  }
+}
+
+function drawHealPacks() {
+  for (const h of G.healPacks) {
+    const s = 1 + 0.15*Math.sin(h.pulse);
+    ctx.save();
+    ctx.translate(h.x, h.y);
+    ctx.scale(s, s);
+    // White box with green cross
+    ctx.fillStyle = '#fff';
+    ctx.shadowColor = '#66bb6a'; ctx.shadowBlur = 12;
+    ctx.fillRect(-h.r, -h.r, h.r*2, h.r*2);
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = '#66bb6a';
+    ctx.fillRect(-h.r*0.7, -h.r*0.25, h.r*1.4, h.r*0.5);
+    ctx.fillRect(-h.r*0.25, -h.r*0.7, h.r*0.5, h.r*1.4);
+    ctx.restore();
+  }
+}
+
+function drawFloatTexts() {
+  ctx.textAlign = 'center'; ctx.font = 'bold 16px sans-serif';
+  for (const t of G.floatTexts) {
+    const a = t.life / 60;
+    ctx.globalAlpha = a;
+    ctx.fillStyle = t.color;
+    ctx.shadowColor = '#000'; ctx.shadowBlur = 4;
+    ctx.fillText(t.text, t.x, t.y);
+    ctx.shadowBlur = 0;
+  }
+  ctx.globalAlpha = 1;
+}
+
+function drawJoystick() {
+  if (!IS_MOBILE) return;
+  const j = G.joy;
+  if (j.active) {
+    ctx.strokeStyle = 'rgba(255,255,255,0.4)'; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.arc(j.cx, j.cy, 55, 0, TAU); ctx.stroke();
+    ctx.strokeStyle = 'rgba(255,255,255,0.15)'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.arc(j.cx, j.cy, 30, 0, TAU); ctx.stroke();
+    ctx.fillStyle = 'rgba(66,165,245,0.5)';
+    ctx.beginPath(); ctx.arc(j.cx + j.dx, j.cy + j.dy, 24, 0, TAU); ctx.fill();
+    ctx.strokeStyle = 'rgba(102,187,245,0.8)'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(j.cx + j.dx, j.cy + j.dy, 24, 0, TAU); ctx.stroke();
+  } else {
+    const hx = W*0.18, hy = H*0.7;
+    ctx.strokeStyle = 'rgba(255,255,255,0.12)'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(hx, hy, 50, 0, TAU); ctx.stroke();
+    ctx.fillStyle = 'rgba(255,255,255,0.06)';
+    ctx.beginPath(); ctx.arc(hx, hy, 50, 0, TAU); ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,0.2)'; ctx.font = 'bold 11px sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText('移动', hx, hy+4);
+  }
+}
+
+function drawGestureHint() {
+  if (!IS_MOBILE || G.state !== 'PLAYING') return;
+  if (G.isDrawing) return;
+  const t = Math.sin(G.time * 0.05) * 0.3 + 0.7;
+  ctx.globalAlpha = 0.08 * t;
+  ctx.fillStyle = '#ff6b35';
+  ctx.fillRect(W/2, 0, W/2, H);
+  ctx.globalAlpha = 0.15 * t;
+  ctx.fillStyle = '#ff6b35'; ctx.font = 'bold 14px sans-serif'; ctx.textAlign = 'center';
+  ctx.fillText('画手势施法', W*0.75, H*0.5);
+  ctx.globalAlpha = 1;
+}
+
+function drawGesture() {
+  if (G.gesturePts.length < 2) return;
+  const col = ELEMENTS[G.selectedMat].color;
+  ctx.strokeStyle = col;
+  ctx.lineWidth = 4;
+  ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  ctx.shadowColor = col; ctx.shadowBlur = 12;
+  ctx.globalAlpha = 0.85;
+  ctx.beginPath();
+  ctx.moveTo(G.gesturePts[0].x, G.gesturePts[0].y);
+  for (let i=1; i<G.gesturePts.length; i++) {
+    ctx.lineTo(G.gesturePts[i].x, G.gesturePts[i].y);
+  }
+  ctx.stroke();
+  ctx.shadowBlur = 0; ctx.globalAlpha = 1;
+  // End point
+  const last = G.gesturePts[G.gesturePts.length-1];
+  ctx.fillStyle = col;
+  ctx.beginPath(); ctx.arc(last.x, last.y, 6, 0, TAU); ctx.fill();
+}
+
+function lerpColor(c1, c2, t) {
+  const h1 = parseInt(c1.slice(1), 16);
+  const h2 = parseInt(c2.slice(1), 16);
+  const r = Math.round(lerp((h1>>16)&255, (h2>>16)&255, t));
+  const g = Math.round(lerp((h1>>8)&255, (h2>>8)&255, t));
+  const b = Math.round(lerp(h1&255, h2&255, t));
+  return 'rgb('+r+','+g+','+b+')';
+}
+
+// ======================== HUD ========================
+function buildMaterialUI() {
+  const bar = document.getElementById('mat-bar');
+  bar.innerHTML = '';
+  ELEM_KEYS.forEach((k, i) => {
+    const el = ELEMENTS[k];
+    const d = document.createElement('div');
+    d.className = 'mslot';
+    d.dataset.elem = k;
+    d.style.setProperty('--gc', el.color);
+    d.innerHTML = '<span class="ico">'+el.icon+'</span><span class="cnt">0</span><span class="key">'+(i+1)+'</span>';
+    d.addEventListener('click', () => selectMaterial(k));
+    bar.appendChild(d);
+  });
+  updateMaterialUI();
+}
+
+function updateMaterialUI() {
+  document.querySelectorAll('.mslot').forEach(d => {
+    const k = d.dataset.elem;
+    const cnt = G.materials[k] || 0;
+    d.querySelector('.cnt').textContent = cnt;
+    d.classList.toggle('active', k === G.selectedMat);
+    d.classList.toggle('empty', cnt <= 0);
+  });
+}
+
+function updateHUD() {
+  const p = G.player;
+  if (!p) return;
+  const pct = clamp(p.hp/p.maxHp*100, 0, 100);
+  const hpBar = document.getElementById('hp-bar');
+  hpBar.style.width = pct + '%';
+  hpBar.classList.toggle('shield', p.shield > 0);
+  document.getElementById('hp-text').textContent = Math.max(0, Math.round(p.hp)) + '/' + p.maxHp + (p.shield > 0 ? ' +' + Math.round(p.shield) : '');
+  document.getElementById('score-tag').textContent = '分数 ' + G.score;
+  const fb = document.getElementById('spell-fb');
+  if (G.fbTimer > 0) {
+    fb.textContent = G.fbText;
+    fb.style.color = G.fbColor;
+    fb.style.opacity = G.fbTimer > 50 ? 1 : G.fbTimer/50;
+  } else {
+    fb.style.opacity = 0;
+  }
+  // Boss HP bar
+  const bossBox = document.getElementById('boss-hp-box');
+  if (G.boss) {
+    bossBox.classList.remove('hidden');
+    const bp = clamp(G.boss.hp / G.boss.maxHp * 100, 0, 100);
+    document.getElementById('boss-hp-bar').style.width = bp + '%';
+    document.getElementById('boss-hp-text').textContent = G.boss.phaseName + ' · ' + Math.max(0, Math.round(G.boss.hp));
+  } else {
+    bossBox.classList.add('hidden');
+  }
+  // Adventure info
+  const profMax = Math.max(0, ...ELEM_KEYS.map(k => G.proficiency[k] || 0));
+  document.getElementById('adv-info').innerHTML = '冒险等级 ' + G.adventureLevel + '<br>熟练度 ' + profMax + '/' + PROF_MAX;
+}
+
+// ======================== 游戏流程 ========================
+function startGame() {
+  G.state = 'PLAYING';
+  G.player = createPlayer();
+  G.enemies = []; G.projectiles = []; G.particles = []; G.crystals = []; G.healPacks = []; G.floatTexts = [];
+  G.walls = []; G.healZones = []; G.treeSpirits = []; G.lineEffects = [];
+  G.wave = 0; G.waveActive = false; G.waveCD = 60;
+  G.score = 0; G.kills = 0;
+  G.selectedMat = 'fire';
+  G.materials = { fire:8, water:8, earth:8, wood:5, thunder:5, ice:5 };
+  G.proficiency = {};
+  ELEM_KEYS.forEach(k => G.proficiency[k] = 0);
+  G.boss = null; G.evacPoint = null;
+  G.unsaved = false;
+  G.gesturePts = []; G.isDrawing = false; G.joy.active = false;
+  G.shake = 0; G.fbTimer = 0;
+  document.getElementById('start-screen').classList.add('hidden');
+  document.getElementById('gameover-screen').classList.add('hidden');
+  document.getElementById('hud').classList.remove('hidden');
+  buildMaterialUI();
+}
+
+function gameOver(evacuated) {
+  G.state = 'GAMEOVER';
+  document.getElementById('hud').classList.add('hidden');
+  const s = document.getElementById('go-stats');
+  const title = document.getElementById('go-title');
+  const sub = document.getElementById('go-subtitle');
+  if (evacuated) {
+    title.textContent = '撤离成功！';
+    title.style.textShadow = '0 0 20px #4fc3f7';
+    sub.textContent = '带着战利品凯旋而归';
+  } else {
+    title.textContent = '冒险失败';
+    title.style.textShadow = '0 0 20px #f44336';
+    sub.textContent = '魔法远征暂告一段落';
+  }
+  s.innerHTML = '到达波数: <span>'+G.wave+'</span><br>击败敌人: <span>'+G.kills+'</span><br>冒险等级: <span>'+G.adventureLevel+'</span><br>最终分数: <span>'+G.score+'</span>';
+  document.getElementById('gameover-screen').classList.remove('hidden');
+}
+
+// ======================== 暂停 / 保存 / 读取 ========================
+function pauseGame() {
+  if (G.state !== 'PLAYING' || G.paused) return;
+  G.paused = true;
+  G.isDrawing = false;
+  G.gesturePts = [];
+  G.joy.active = false;
+  document.getElementById('pause-stats').innerHTML =
+    '波数: <b>'+G.wave+'</b> &nbsp; 击败: <b>'+G.kills+'</b> &nbsp; 分数: <b>'+G.score+'</b><br>' +
+    '生命: <b>'+Math.max(0,Math.round(G.player.hp))+'/'+G.player.maxHp+'</b> &nbsp; 冒险等级: <b>'+G.adventureLevel+'</b><br>' +
+    '熟练度: ' + ELEM_KEYS.map(k => ELEMENTS[k].name+'<b>'+(G.proficiency[k]||0)+'</b>').join(' / ');
+  document.getElementById('save-msg').classList.add('hidden');
+  document.getElementById('quit-confirm').classList.add('hidden');
+  document.getElementById('pause-screen').classList.remove('hidden');
+}
+
+function resumeGame() {
+  G.paused = false;
+  document.getElementById('pause-screen').classList.add('hidden');
+}
+
+function saveGame() {
+  try {
+    const data = {
+      player: G.player,
+      enemies: G.enemies,
+      projectiles: G.projectiles,
+      crystals: G.crystals,
+      walls: G.walls,
+      healZones: G.healZones,
+      treeSpirits: G.treeSpirits,
+      wave: G.wave,
+      waveActive: G.waveActive,
+      waveCD: G.waveCD,
+      spawnQueue: G.spawnQueue,
+      score: G.score,
+      kills: G.kills,
+      materials: G.materials,
+      selectedMat: G.selectedMat,
+      proficiency: G.proficiency,
+      boss: G.boss,
+      evacPoint: G.evacPoint,
+      time: G.time,
+    };
+    localStorage.setItem(SAVE_KEY, JSON.stringify(data));
+    G.unsaved = false;
+    const msg = document.getElementById('save-msg');
+    msg.textContent = '已保存：第'+G.wave+'波 · 分数'+G.score;
+    msg.classList.remove('err','hidden');
+    return true;
+  } catch(e) {
+    const msg = document.getElementById('save-msg');
+    msg.textContent = '保存失败：'+e.message;
+    msg.classList.add('err');
+    msg.classList.remove('hidden');
+    return false;
+  }
+}
+
+function loadGame() {
+  try {
+    const raw = localStorage.getItem(SAVE_KEY);
+    if (!raw) return false;
+    const data = JSON.parse(raw);
+    G.state = 'PLAYING';
+    G.paused = false;
+    G.player = data.player;
+    G.enemies = data.enemies || [];
+    G.projectiles = [];
+    G.particles = [];
+    G.crystals = data.crystals || [];
+    G.walls = data.walls || [];
+    G.healZones = data.healZones || [];
+    G.treeSpirits = data.treeSpirits || [];
+    G.lineEffects = [];
+    G.floatTexts = [];
+    G.wave = data.wave || 0;
+    G.waveActive = data.waveActive || false;
+    G.waveCD = data.waveCD || 60;
+    G.spawnQueue = data.spawnQueue || [];
+    G.score = data.score || 0;
+    G.kills = data.kills || 0;
+    G.materials = data.materials;
+    G.selectedMat = data.selectedMat || 'fire';
+    G.proficiency = data.proficiency || {};
+    ELEM_KEYS.forEach(k => { if (G.proficiency[k] == null) G.proficiency[k] = 0; });
+    G.boss = data.boss || null;
+    G.evacPoint = data.evacPoint || null;
+    G.unsaved = false;
+    G.gesturePts = []; G.isDrawing = false; G.joy.active = false;
+    G.shake = 0; G.fbTimer = 0; G.time = data.time || 0;
+    document.getElementById('start-screen').classList.add('hidden');
+    document.getElementById('gameover-screen').classList.add('hidden');
+    document.getElementById('pause-screen').classList.add('hidden');
+    document.getElementById('hud').classList.remove('hidden');
+    buildMaterialUI();
+    document.getElementById('wave-tag').textContent = '第'+G.wave+'波';
+    return true;
+  } catch(e) {
+    console.error('Load failed:', e);
+    return false;
+  }
+}
+
+function hasSave() {
+  try { return !!localStorage.getItem(SAVE_KEY); } catch(e) { return false; }
+}
+
+function clearSave() {
+  try { localStorage.removeItem(SAVE_KEY); } catch(e) {}
+}
+
+function backToHome() {
+  G.state = 'START';
+  G.paused = false;
+  document.getElementById('hud').classList.add('hidden');
+  document.getElementById('gameover-screen').classList.add('hidden');
+  document.getElementById('pause-screen').classList.add('hidden');
+  document.getElementById('start-screen').classList.remove('hidden');
+  document.getElementById('adv-display').textContent = '当前冒险等级: ' + G.adventureLevel;
+  document.getElementById('continue-btn').classList.toggle('hidden', !hasSave());
+}
+
+// ======================== 游戏循环 ========================
+function loop() {
+  update();
+  render();
+  requestAnimationFrame(loop);
+}
+
+// ======================== 初始化 ========================
+document.getElementById('start-btn').addEventListener('click', () => { startGame(); });
+document.getElementById('restart-btn').addEventListener('click', () => { startGame(); });
+document.getElementById('continue-btn').addEventListener('click', () => { loadGame(); });
+document.getElementById('pause-btn').addEventListener('click', pauseGame);
+document.getElementById('resume-btn').addEventListener('click', resumeGame);
+document.getElementById('save-btn').addEventListener('click', saveGame);
+document.getElementById('quit-btn').addEventListener('click', () => {
+  if (G.unsaved) {
+    document.getElementById('quit-confirm').classList.remove('hidden');
+  } else {
+    backToHome();
+  }
+});
+document.getElementById('quit-confirm-yes').addEventListener('click', () => {
+  G.unsaved = false;
+  backToHome();
+});
+document.getElementById('quit-confirm-no').addEventListener('click', () => {
+  document.getElementById('quit-confirm').classList.add('hidden');
+});
+document.getElementById('back-home-btn').addEventListener('click', backToHome);
+
+window.addEventListener('keydown', e => {
+  if ((e.key === 'p' || e.key === 'P' || e.key === 'Escape') && G.state === 'PLAYING') {
+    e.preventDefault();
+    if (G.paused) resumeGame(); else pauseGame();
+  }
+});
+
+// 初始检测存档
+loadAdventureLevel();
+document.getElementById('adv-display').textContent = '当前冒险等级: ' + G.adventureLevel;
+document.getElementById('continue-btn').classList.toggle('hidden', !hasSave());
+
+// 移动端切换操作提示
+if (IS_MOBILE) {
+  document.getElementById('ctrl-pc').style.display = 'none';
+  document.getElementById('ctrl-mobile').style.display = '';
+  canvas.style.cursor = 'default';
+}
+
+// 阻止移动端双击缩放和长按菜单
+let lastTouchTime = 0;
+document.addEventListener('touchend', e => {
+  const now = Date.now();
+  if (now - lastTouchTime <= 300) e.preventDefault();
+  lastTouchTime = now;
+}, {passive:false});
+document.addEventListener('contextmenu', e => { if (IS_MOBILE) e.preventDefault(); });
+
+requestAnimationFrame(loop);
+try { getTemplates(); } catch(e) { console.error('Template init failed:', e); }
+
+</script>
+</body>
+</html>
