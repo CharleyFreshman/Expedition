@@ -173,7 +173,7 @@ button:hover{transform:scale(1.05)}
     <p>
       <b style="color:#ff6b35">火</b> 扇形 大范围 高伤<br>
       <b style="color:#66bb6a">木</b> 召唤树灵 嘲讽 持续伤害<br>
-      <b style="color:#fdd835">土</b> 城墙 阻挡敌人 可进出<br>
+      <b style="color:#fdd835">土</b> 城墙(40血) 弹反怪物<br>
       <b style="color:#ab47bc">雷</b> 追踪多目标 连锁反应<br>
       <b style="color:#fff">冰</b> 冰封 中范围 冻结+伤害<br>
       <b style="color:#42a5f5">水</b> 治疗领域 中范围 持续回血
@@ -231,19 +231,19 @@ const ELEM_KEYS = ['fire','wood','earth','thunder','ice','water'];
 // 3星(圆形CIRCLE)范围法术: 各元素不同效果
 const SPELLS = [
   // === LINE (2星) 单体法术 ===
-  { id:'fire_line',    name:'火弹',     elem:'fire',    gesture:'LINE', cost:1, type:'projectile', dmg:2, range:3*UNIT, r:8, splash:true },
-  { id:'wood_line',    name:'藤蔓弹',   elem:'wood',    gesture:'LINE', cost:1, type:'instant', dmg:1, range:4*UNIT, fx:'bind' },
+  { id:'fire_line',    name:'火球术',     elem:'fire',    gesture:'LINE', cost:1, type:'projectile', dmg:2, range:3*UNIT, r:8, splash:true },
+  { id:'wood_line',    name:'藤蔓缠绕',   elem:'wood',    gesture:'LINE', cost:1, type:'instant', dmg:1, range:4*UNIT, fx:'bind' },
   { id:'earth_line',   name:'碎石弹',   elem:'earth',   gesture:'LINE', cost:1, type:'projectile', dmg:2, trackRange:4*UNIT, r:9 },
-  { id:'thunder_line', name:'雷光',     elem:'thunder', gesture:'LINE', cost:1, type:'zigzag',      dmg:2, len:3*UNIT },
-  { id:'ice_line',     name:'冰锥',     elem:'ice',     gesture:'LINE', cost:1, type:'projectile', dmg:2, range:3*UNIT, r:8 },
-  { id:'water_line',   name:'水流',     elem:'water',   gesture:'LINE', cost:1, type:'line',        dmg:3, len:2*UNIT },
+  { id:'thunder_line', name:'晴空霹雳',     elem:'thunder', gesture:'LINE', cost:1, type:'zigzag',      dmg:2, len:3*UNIT },
+  { id:'ice_line',     name:'冰锥术',     elem:'ice',     gesture:'LINE', cost:1, type:'projectile', dmg:2, range:3*UNIT, r:8 },
+  { id:'water_line',   name:'龙王一喷',     elem:'water',   gesture:'LINE', cost:1, type:'line',        dmg:3, len:2*UNIT },
   // === CIRCLE (3星) 范围法术 ===
   { id:'fire_circle',  name:'烈焰扇',   elem:'fire',    gesture:'CIRCLE', cost:2, type:'fan',      dmg:4, radius:3*UNIT, angle:Math.PI/2 },
   { id:'wood_circle',  name:'树灵召唤', elem:'wood',    gesture:'CIRCLE', cost:2, type:'summon',   spiritHp:10, dur:99999 },
-  { id:'earth_circle', name:'城墙',     elem:'earth',   gesture:'CIRCLE', cost:2, type:'wall',     size:2*UNIT, dur:8*60, wallHp:20 },
-  { id:'thunder_circle',name:'连锁雷击', elem:'thunder', gesture:'CIRCLE', cost:2, type:'chain',    dmg:3, range:3*UNIT, maxJumps:8 },
-  { id:'ice_circle',   name:'冰封',     elem:'ice',     gesture:'CIRCLE', cost:2, type:'freeze',   radius:2*UNIT, dmg:3, freezeMon:6*60, freezeBoss:3*60 },
-  { id:'water_circle', name:'治愈领域', elem:'water',   gesture:'CIRCLE', cost:2, type:'healzone', radius:2*UNIT, healRate:10, dur:5*60 },
+  { id:'earth_circle', name:'守护之墙',     elem:'earth',   gesture:'CIRCLE', cost:2, type:'wall',     size:2*UNIT, dur:8*60, wallHp:40 },
+  { id:'thunder_circle',name:'雷の呼吸·柒之型', elem:'thunder', gesture:'CIRCLE', cost:2, type:'chain',    dmg:3, range:3*UNIT, maxJumps:8 },
+  { id:'ice_circle',   name:'千里冰封',     elem:'ice',     gesture:'CIRCLE', cost:2, type:'freeze',   radius:3*UNIT, dmg:3, freezeMon:6*60, freezeBoss:3*60 },
+  { id:'water_circle', name:'春风化雨', elem:'water',   gesture:'CIRCLE', cost:2, type:'healzone', radius:2*UNIT, healRate:10, dur:5*60 },
 ];
 const SPELL_MAP = {};
 SPELLS.forEach(s => { SPELL_MAP[s.elem + '|' + s.gesture] = s; });
@@ -761,8 +761,12 @@ function castSpell(spell) {
       from = {x:nearest.x, y:nearest.y};
     }
     if (targets.length > 0) {
-      G.lineEffects.push({type:'chain', segs:targets, elem:'thunder', life:15, color:ELEMENTS.thunder.color});
-      G.shake = 5;
+      G.lineEffects.push({type:'chain', segs:targets, elem:'thunder', life:30, color:ELEMENTS.thunder.color});
+      G.shake = 8;
+      for (const t of targets) {
+        addParticles(t.x2, t.y2, '#ab47bc', 8, 5, 25);
+        addParticles(t.x2, t.y2, '#e040fb', 4, 3, 20);
+      }
       addProf(spell.elem);
     }
   } else if (spell.type === 'freeze') {
@@ -1117,20 +1121,23 @@ function updateEnemies() {
     e.x = clamp(e.x, e.r, W-e.r);
     e.y = clamp(e.y, e.r, H-e.r);
 
-    // Wall collision: enemies can't pass through
+    // Wall collision: enemies can't pass through, bounce back
     for (const w of G.walls) {
       const hw = w.size/2;
       if (e.x > w.x-hw-e.r && e.x < w.x+hw+e.r && e.y > w.y-hw-e.r && e.y < w.y+hw+e.r) {
         const dx = e.x - w.x, dy = e.y - w.y;
+        const ang = Math.atan2(dy, dx);
         if (Math.abs(dx) > Math.abs(dy)) {
           e.x = dx > 0 ? w.x+hw+e.r : w.x-hw-e.r;
-          e.vx = -e.vx * 0.3;
+          e.vx = -e.vx * 0.3 + Math.cos(ang)*6;
         } else {
           e.y = dy > 0 ? w.y+hw+e.r : w.y-hw-e.r;
-          e.vy = -e.vy * 0.3;
+          e.vy = -e.vy * 0.3 + Math.sin(ang)*6;
         }
-        // Wall takes damage from contact
+        // Wall takes damage from contact, bounce effect
         w.hp -= 5;
+        addParticles(e.x, e.y, '#fdd835', 6, 4, 15);
+        e.hitFlash = 4;
       }
     }
 
@@ -1860,10 +1867,25 @@ function drawLineEffects() {
       ctx.globalAlpha = a * 0.2; ctx.fillStyle = le.color;
       ctx.beginPath(); ctx.arc(le.x, le.y, le.r, 0, TAU); ctx.fill();
     } else if (le.type === 'chain') {
-      ctx.strokeStyle = le.color; ctx.lineWidth = 4;
+      ctx.shadowColor = le.color; ctx.shadowBlur = 20;
+      ctx.strokeStyle = '#e040fb'; ctx.lineWidth = 6;
+      ctx.beginPath();
+      for (const s of le.segs) {
+        const jx = (Math.random()-0.5)*8*a, jy = (Math.random()-0.5)*8*a;
+        ctx.moveTo(s.x1, s.y1); ctx.lineTo(s.x2+jx, s.y2+jy);
+      }
+      ctx.stroke();
+      ctx.strokeStyle = le.color; ctx.lineWidth = 3;
       ctx.beginPath();
       for (const s of le.segs) { ctx.moveTo(s.x1, s.y1); ctx.lineTo(s.x2, s.y2); }
       ctx.stroke();
+      if (a > 0.5) {
+        ctx.fillStyle = '#fff'; ctx.globalAlpha = a;
+        for (const s of le.segs) {
+          ctx.beginPath(); ctx.arc(s.x2, s.y2, 5*(1-a*0.5), 0, TAU); ctx.fill();
+        }
+        ctx.globalAlpha = a;
+      }
     } else {
       // Simple line (water)
       ctx.lineWidth = le.width || 5;
