@@ -100,6 +100,12 @@ button:hover{transform:scale(1.05)}
 <body>
 <canvas id="canvas"></canvas>
 
+<div id="landscape-hint" style="display:none;position:fixed;inset:0;z-index:9999;background:#0a0a14;flex-direction:column;align-items:center;justify-content:center;color:#fff;text-align:center;padding:20px">
+  <div style="font-size:48px;margin-bottom:16px">📱↻</div>
+  <h2 style="font-size:22px;margin-bottom:8px">请横屏游玩</h2>
+  <p style="color:#888;font-size:14px">旋转设备至横屏以获得最佳体验</p>
+</div>
+
 <div id="hud" class="hidden">
   <div id="top-bar">
     <div id="hp-box"><div id="hp-bar"></div><span id="hp-text">100/100</span></div>
@@ -171,12 +177,12 @@ button:hover{transform:scale(1.05)}
   <div class="panel">
     <h3>3星法术（圆形·范围）</h3>
     <p>
-      <b style="color:#ff6b35">火</b> 扇形 大范围 高伤<br>
-      <b style="color:#66bb6a">木</b> 召唤树灵(20血) 嘲讽 持续伤害<br>
-      <b style="color:#fdd835">土</b> 城墙(40血) 弹反怪物<br>
-      <b style="color:#ab47bc">雷</b> 追踪多目标 连锁反应<br>
-      <b style="color:#fff">冰</b> 冰封 中范围 冻结+伤害<br>
-      <b style="color:#42a5f5">水</b> 治疗领域 中范围 持续回血
+      <b style="color:#ff6b35">火</b> 扇形 大范围伤害<br>
+      <b style="color:#66bb6a">木</b> 召唤树灵 嘲讽输出<br>
+      <b style="color:#fdd835">土</b> 城墙防御 弹反怪物<br>
+      <b style="color:#ab47bc">雷</b> 追踪目标 连锁反应<br>
+      <b style="color:#fff">冰</b> 冰冻敌人 造成伤害<br>
+      <b style="color:#42a5f5">水</b> 治疗领域 持续回血
     </p>
   </div>
   <div class="panel">
@@ -271,7 +277,7 @@ const WAVE_TABLE = [
   ['wolf','bat','firebug','iceshard','slime'],
 ];
 
-const BOSS_INTERVAL = 4;
+const BOSS_INTERVAL = 3;
 const BOSS_TYPES = {
   fairy: {
     name: '腐化妖精', hp: 50, spd: 1.0, dmg: 10, r: 30,
@@ -479,9 +485,17 @@ function resize() {
 window.addEventListener('resize', resize);
 window.addEventListener('orientationchange', () => setTimeout(resize, 100));
 resize();
+
 if (IS_MOBILE) {
-  document.documentElement.style.height = '100vh';
-  document.body.style.height = '100vh';
+  // 横屏检测
+  function checkLandscape() {
+    const hint = document.getElementById('landscape-hint');
+    const isPortrait = window.innerHeight > window.innerWidth;
+    hint.style.display = isPortrait ? 'flex' : 'none';
+  }
+  window.addEventListener('resize', checkLandscape);
+  window.addEventListener('orientationchange', () => setTimeout(checkLandscape, 100));
+  checkLandscape();
 }
 
 // ======================== 实体创建 ========================
@@ -887,8 +901,8 @@ function startNextWave() {
     }
   }
   // Add elite monsters at the end of pre-boss waves
-  const cycleWave = (G.wave - 1) % BOSS_INTERVAL; // 0,1,2 before boss
-  const eliteCount = cycleWave + 1; // wave1=1, wave2=2, wave3=3
+  const cycleWave = (G.wave - 1) % BOSS_INTERVAL; // 0,1 before boss
+  const eliteCount = cycleWave + 1; // wave1=1, wave2=2
   for (let i = 0; i < eliteCount; i++) {
     G.spawnQueue.push('spirit');
   }
@@ -1527,13 +1541,22 @@ function updateBoss() {
     }
   }
 
-  // Contact damage
+  // Contact damage to player (8 dmg)
   if (dist(b, p) < b.r + p.r && p.hitFlash <= 0) {
     const dmgMult = phase.dmgMult || 1;
-    let dmg = def.dmg * dmgMult;
+    let dmg = 8 * dmgMult;
     if (p.shield > 0) { const a = Math.min(p.shield, dmg); p.shield -= a; dmg -= a; }
     p.hp -= dmg; p.hitFlash = 30; G.shake = 8;
-    addFloatText(p.x, p.y - 25, '-' + Math.round(def.dmg * dmgMult), '#f44336');
+    addFloatText(p.x, p.y - 25, '-' + Math.round(8 * dmgMult), '#f44336');
+  }
+
+  // Boss collision with tree spirits (doesn't target them, but damages on contact)
+  for (const s of G.treeSpirits) {
+    if (dist(b, s) < b.r + s.r) {
+      s.hp -= 8 * (phase.dmgMult || 1);
+      const ang = Math.atan2(s.y - b.y, s.x - b.x);
+      s.vx += Math.cos(ang) * 3; s.vy += Math.sin(ang) * 3;
+    }
   }
 
   // Boss death
@@ -2050,7 +2073,8 @@ function buildMaterialUI() {
     d.dataset.elem = k;
     d.style.setProperty('--gc', el.color);
     d.innerHTML = '<span class="ico">'+el.icon+'</span><span class="cnt">0</span><span class="key">'+(i+1)+'</span>';
-    d.addEventListener('click', () => selectMaterial(k));
+    d.addEventListener('click', (e) => { e.stopPropagation(); selectMaterial(k); });
+    d.addEventListener('touchstart', (e) => { e.preventDefault(); e.stopPropagation(); selectMaterial(k); }, {passive:false});
     bar.appendChild(d);
   });
   updateMaterialUI();
