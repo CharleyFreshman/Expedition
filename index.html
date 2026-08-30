@@ -1535,7 +1535,11 @@ function onBossDeath() {
   addParticles(b.x, b.y, '#ff6b35', 60, 8, 60);
   addParticles(b.x, b.y, '#ffeb3b', 40, 6, 50);
   G.shake = 20;
-  // Drop random crystals
+  // Drop random crystals (reduce current materials by 20%)
+  ELEM_KEYS.forEach(k => {
+    if (G.materials[k]) G.materials[k] = Math.max(0, Math.floor(G.materials[k] * 0.8));
+  });
+  updateMaterialUI();
   for (let i = 0; i < 12; i++) {
     spawnCrystal();
   }
