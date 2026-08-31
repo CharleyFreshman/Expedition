@@ -320,23 +320,22 @@ const WAVE_TABLE = [
 ];
 
 const BOSS_INTERVAL = 3;
+const ENRAGE_COLOR = '#f50057'; // 狂暴阶段专属色（不暗示任何元素）
 const BOSS_TYPES = {
   fairy: {
     name: '腐化妖精', hp: 60, spd: 1.0, dmg: 8, r: 30,
-    switchElems: ['fire', 'thunder'],
     phases: [
-      { hpPct: 1.0,  weak: 'water',  resist: 'wood',   name: '火属性',   elemMode: 'fire',    immune: '',   summon: 'firebug', summonCD: 360, spdMult: 1.0 },
-      { hpPct: 0.60, weak: 'earth',  resist: 'ice',   name: '雷属性',   elemMode: 'thunder', immune: '',   summon: 'bat',     summonCD: 300, spdMult: 1.2 },
-      { hpPct: 0.20, weak: '',  resist: '',   name: '狂暴',     elemMode: '',    immune: 'wood' || 'ice',   summon: 'spirit',  summonCD: 240, spdMult: 1.5, scatter: true },
+      { hpPct: 1.0,  weak: 'water',  resist: 'wood',   phaseName: '火',   elemMode: 'fire',    immune: '',   summon: 'firebug', summonCD: 360, spdMult: 1.0 },
+      { hpPct: 0.60, weak: 'earth',  resist: 'ice',   phaseName: '雷',   elemMode: 'thunder', immune: '',   summon: 'bat',     summonCD: 300, spdMult: 1.2 }, 
+      { hpPct: 0.20, weak: '',  resist: '',   phaseName: '狂暴',     elemMode: ['fire', 'thunder'],    immune: ['wood', 'ice'],   summon: 'spirit',  summonCD: 240, spdMult: 1.5, scatter: true },
     ],
   },
   golem: {
     name: '深渊魔像', hp: 60, spd: 0.75, dmg: 8, r: 40,
-    switchElems: ['ice', 'water'],
     phases: [
-      { hpPct: 1.0,  weak: 'thunder', resist: 'water', name: '冰属性', elemMode: 'ice',    immune: '', summon: 'iceshard', summonCD: 360, spdMult: 1.0 },
-      { hpPct: 0.65, weak: 'ice',     resist: 'fire',  name: '水属性', elemMode: 'water',  immune: '',  summon: 'slime',    summonCD: 300, spdMult: 1.2 },
-      { hpPct: 0.30, weak: '',        resist: '',      name: '狂暴',   elemMode: '',    immune: 'water' || 'fire', summon: 'bat',      summonCD: 240, spdMult: 1.5, scatter: true },
+      { hpPct: 1.0,  weak: 'thunder', resist: 'water', phaseName: '冰', elemMode: 'ice',    immune: '', summon: 'iceshard', summonCD: 360, spdMult: 1.0 },
+      { hpPct: 0.65, weak: 'ice',     resist: 'fire',  phaseName: '水', elemMode: 'water',  immune: '',  summon: 'slime',    summonCD: 300, spdMult: 1.2 },
+      { hpPct: 0.30, weak: '',        resist: '',      phaseName: '狂暴',   elemMode: ['ice', 'water'],    immune: ['water', 'fire'], summon: 'bat',      summonCD: 240, spdMult: 1.5, scatter: true },
     ],
   },
 };
@@ -642,14 +641,15 @@ function addFloatText(x, y, text, color) {
 }
 
 // ======================== 法术系统 ========================
+// 索敌：有效距离 = 中心距离 - 半径，半径越大越容易被锁定（打Boss更稳）
 function findNearestEnemy(x, y) {
   let best=null, md=1e9;
   for (const e of G.enemies) {
-    const d = Math.hypot(e.x-x, e.y-y);
+    const d = Math.hypot(e.x-x, e.y-y) - e.r;
     if (d < md) { md=d; best=e; }
   }
   if (G.boss) {
-    const d = Math.hypot(G.boss.x-x, G.boss.y-y);
+    const d = Math.hypot(G.boss.x-x, G.boss.y-y) - G.boss.r;
     if (d < md) best = G.boss;
   }
   return best;
@@ -762,7 +762,7 @@ function castSpell(spell) {
       life: isEarth ? 300 : 100,
       range: isEarth ? null : spell.range, traveled:0, fx:spell.fx||null,
       hitSet:new Set(), canSplit: isEarth, splitDir: ang,
-      slow: spell.slow || false,
+      slow: spell.slow || false, splash: spell.splash || false,
     });
   } else if (spell.type === 'line') {
     // 水：2单位长度线段，伤害3，一次性伤害，1s视觉效果
@@ -1036,7 +1036,8 @@ function showFeedback(text, color) {
 // ======================== 伤害与战斗 ========================
 function getDamageMultiplier(elem, target) {
   if (target === G.boss) {
-    if (G.boss.immune === elem) return 0;
+    const imm = G.boss.immune;
+    if (imm === elem || (Array.isArray(imm) && imm.includes(elem))) return 0;
     if (G.boss.weak === elem) return 1.5;
     if (G.boss.resist === elem) return 0.5;
     return 1;
@@ -1132,12 +1133,12 @@ function spawnBoss(type) {
     type, x: W / 2, y: -60, vx: 0, vy: 0, r: t.r,
     hp: t.hp + hpBonus, maxHp: t.hp + hpBonus,
     facing: 0, hitFlash: 0,
-    phase: 0, phaseName: ph0.name,
+    phase: 0, phaseName: ph0.phaseName,
     weak: ph0.weak, resist: ph0.resist,
     immune: ph0.immune, elemMode: ph0.elemMode,
     summonCD: ph0.summonCD, summonTimer: ph0.summonCD,
     atkCD: 90, moveT: 0, targetX: W/2, targetY: H/2, freezeT: 0,
-    elemSwitchT: 600, slowStacks: 0, slowDecayT: 0,
+    enrageWeakT: 600, slowStacks: 0, slowDecayT: 0,
   };
 }
 
@@ -1297,8 +1298,17 @@ function updateEnemies() {
     const t = ENEMY_TYPES[e.type];
     if (e.hitFlash > 0) e.hitFlash--;
     if (e.slowStacks > 0) { if (e.slowDecayT > 0) e.slowDecayT--; else { e.slowStacks--; e.slowDecayT = SLOW_DECAY; } }
-    if (e.freezeT > 0) { e.freezeT--; e.vx*=0.5; e.vy*=0.5; e.x+=e.vx; e.y+=e.vy; continue; }
-    if (e.rootT > 0) { e.rootT--; e.vx*=0.8; e.vy*=0.8; e.x+=e.vx; e.y+=e.vy; continue; }
+    if (e.freezeT > 0) {
+      e.freezeT--;
+      e.vx*=0.5; e.vy*=0.5; e.x+=e.vx; e.y+=e.vy;
+      if (e.hp <= 0) G.enemies.splice(i, 1); // 冻结期间致死立即移除
+      continue;
+    }
+    if (e.rootT > 0) {
+      e.rootT--; e.vx*=0.8; e.vy*=0.8; e.x+=e.vx; e.y+=e.vy;
+      if (e.hp <= 0) G.enemies.splice(i, 1); // 束缚期间致死立即移除
+      continue;
+    }
     const spd = Math.max(0, t.spd - ICE_SLOW * getBuffSlowMult() * (e.slowStacks||0));
     const d = Math.hypot(p.x-e.x, p.y-e.y);
     // Taunt: target nearest tree spirit if within 2 units
@@ -1433,10 +1443,10 @@ function updateProjectiles() {
           pr.hitSet.add(e);
           damageEnemy(e, pr.dmg, pr.elem);
           if (pr.splash) {
-            // 以命中敌人为中心，pr.r 为爆炸半径，范围内敌人各受一次伤害
+            // 以命中敌人为中心，e.r + pr.r 为半径，范围内其他敌人受到同等伤害
             for (const e2 of G.enemies) {
               if (pr.hitSet.has(e2)) continue;
-              if (dist(e, e2) < pr.r) {
+              if (dist(e, e2) - e2.r < e.r + pr.r) {
                 pr.hitSet.add(e2);
                 damageEnemy(e2, pr.dmg, pr.elem);
                 addParticles(e2.x, e2.y, ELEMENTS[pr.elem].color, 6, 3, 15);
@@ -1459,9 +1469,10 @@ function updateProjectiles() {
         pr.hitSet.add(G.boss);
         damageBoss(pr.dmg, pr.elem);
         if (pr.splash) {
+          // 以Boss为中心，G.boss.r + 2*pr.r 为半径，范围内敌人受到同等伤害
           for (const e2 of G.enemies) {
             if (pr.hitSet.has(e2)) continue;
-            if (dist(G.boss, e2) < pr.r) {
+            if (dist(G.boss, e2) - e2.r < G.boss.r + pr.r) {
               pr.hitSet.add(e2);
               damageEnemy(e2, pr.dmg, pr.elem);
               addParticles(e2.x, e2.y, ELEMENTS[pr.elem].color, 6, 3, 15);
@@ -1680,11 +1691,16 @@ function updateBoss() {
     if (hpPct <= phases[i].hpPct && b.phase < i) {
       b.phase = i;
       const ph = phases[i];
-      b.phaseName = ph.name;
+      b.phaseName = ph.phaseName;
       b.weak = ph.weak; b.resist = ph.resist;
       b.immune = ph.immune; b.elemMode = ph.elemMode;
+      if (i === phases.length - 1) { // 狂暴：初始弱点=首个非免疫元素，之后每10s轮换
+        const pool = ELEM_KEYS.filter(k => !(Array.isArray(ph.immune) ? ph.immune.includes(k) : ph.immune === k));
+        b.weak = pool[0];
+        b.enrageWeakT = 600;
+      }
       b.summonCD = ph.summonCD; b.summonTimer = ph.summonCD;
-      showFeedback('Boss进入：' + ph.name + '！', '#ff6b35');
+      showFeedback('Boss进入：' + ph.phaseName + '！', '#ff6b35');
       G.shake = 10;
       addParticles(b.x, b.y, '#ff6b35', 30, 6, 50);
       break;
@@ -1692,19 +1708,18 @@ function updateBoss() {
   }
   const phase = phases[b.phase];
 
-  // Element switch every 10s
-  b.elemSwitchT--;
-  if (b.elemSwitchT <= 0) {
-    b.elemSwitchT = 600;
-    const sw = def.switchElems;
-    const idx = sw.indexOf(b.elemMode);
-    b.elemMode = sw[(idx + 1) % sw.length];
-    if (phase.weak !== '') {
-      b.weak = Object.keys(COUNTERS).find(k => COUNTERS[k] === b.elemMode) || '';
-      b.resist = COUNTERS[b.elemMode] || '';
+  // 狂暴阶段：克制元素每10s轮换（免疫固定、无抗性）
+  if (b.phase === phases.length - 1) {
+    b.enrageWeakT--;
+    if (b.enrageWeakT <= 0) {
+      b.enrageWeakT = 600;
+      const pool = ELEM_KEYS.filter(k => !(Array.isArray(b.immune) ? b.immune.includes(k) : b.immune === k));
+      const idx = pool.indexOf(b.weak);
+      b.weak = pool[(idx + 1) % pool.length];
+      b.resist = '';
+      showFeedback('弱点切换：' + ELEMENTS[b.weak].name + '！', ENRAGE_COLOR);
+      addParticles(b.x, b.y, ENRAGE_COLOR, 20, 4, 35);
     }
-    showFeedback(def.name + '切换为' + ELEMENTS[b.elemMode].name + '属性！', ELEMENTS[b.elemMode].color);
-    addParticles(b.x, b.y, ELEMENTS[b.elemMode].color, 25, 5, 40);
   }
 
   // Freeze check
@@ -2053,7 +2068,8 @@ function drawBoss() {
   const b = G.boss;
   if (!b) return;
   const def = BOSS_TYPES[b.type];
-  let color = ELEMENTS[b.elemMode || 'fire'].color;
+  const isEnrage = b.phase === def.phases.length - 1;
+  let color = isEnrage ? ENRAGE_COLOR : ELEMENTS[b.elemMode || 'fire'].color;
   if (b.hitFlash > 0) color = '#fff';
   // Body with pulsing aura
   const pulse = 1 + 0.05 * Math.sin(G.time * 0.1);
@@ -2090,9 +2106,6 @@ function drawBoss() {
   ctx.arc(ex + b.r * 0.3, ey - b.r * 0.15, 4, 0, TAU);
   ctx.fill();
   ctx.restore();
-  // Phase indicator
-  ctx.fillStyle = '#ff6b35'; ctx.font = 'bold 13px sans-serif'; ctx.textAlign = 'center';
-  ctx.fillText(b.phaseName, b.x, b.y - b.r - 16);
 }
 
 function drawEvacPoint() {
@@ -2269,25 +2282,22 @@ function drawLineEffects() {
       ctx.globalAlpha = a * 0.2; ctx.fillStyle = le.color;
       ctx.beginPath(); ctx.arc(le.x, le.y, le.r, 0, TAU); ctx.fill();
     } else if (le.type === 'chain') {
+      // 闪电效果：抖动折线 + 外层光晕 + 内层白芯（无端点白点）
       ctx.shadowColor = le.color; ctx.shadowBlur = 20;
-      ctx.strokeStyle = '#e040fb'; ctx.lineWidth = 6;
+      ctx.strokeStyle = le.color; ctx.lineWidth = le.width || 8;
       ctx.beginPath();
       for (const s of le.segs) {
         const jx = (Math.random()-0.5)*8*a, jy = (Math.random()-0.5)*8*a;
         ctx.moveTo(s.x1, s.y1); ctx.lineTo(s.x2+jx, s.y2+jy);
       }
       ctx.stroke();
-      ctx.strokeStyle = le.color; ctx.lineWidth = 3;
+      ctx.strokeStyle = '#fff'; ctx.lineWidth = (le.width||8)*0.4;
       ctx.beginPath();
-      for (const s of le.segs) { ctx.moveTo(s.x1, s.y1); ctx.lineTo(s.x2, s.y2); }
-      ctx.stroke();
-      if (a > 0.5) {
-        ctx.fillStyle = '#fff'; ctx.globalAlpha = a;
-        for (const s of le.segs) {
-          ctx.beginPath(); ctx.arc(s.x2, s.y2, Math.max(0, 5*(1-a*0.5)), 0, TAU); ctx.fill();
-        }
-        ctx.globalAlpha = a;
+      for (const s of le.segs) {
+        const jx = (Math.random()-0.5)*8*a, jy = (Math.random()-0.5)*8*a;
+        ctx.moveTo(s.x1, s.y1); ctx.lineTo(s.x2+jx, s.y2+jy);
       }
+      ctx.stroke();
     } else {
       // Simple line (water)
       ctx.lineWidth = le.width || 5;
@@ -2503,9 +2513,18 @@ function updateHUD() {
   const bossBox = document.getElementById('boss-hp-box');
   if (G.boss) {
     bossBox.classList.remove('hidden');
-    const bp = clamp(G.boss.hp / G.boss.maxHp * 100, 0, 100);
+    const b = G.boss;
+    const bDef = BOSS_TYPES[b.type];
+    const isEnrage = b.phase === bDef.phases.length - 1;
+    const bp = clamp(b.hp / b.maxHp * 100, 0, 100);
     document.getElementById('boss-hp-bar').style.width = bp + '%';
-    document.getElementById('boss-hp-text').textContent = BOSS_TYPES[G.boss.type].name + ' · ' + G.boss.phaseName + ' · ' + Math.max(0, Math.round(G.boss.hp));
+    let info = bDef.name + ' · ' + b.phaseName;
+    const imm = b.immune;
+    const immList = Array.isArray(imm) ? imm : (imm ? [imm] : []);
+    info += ' HP: ' + Math.max(0, Math.round(b.hp));
+    if (immList.length) info += ' 免疫: ' + immList.map(x => ELEMENTS[x].name).join('/');
+    document.getElementById('boss-hp-text').textContent = info;
+    document.getElementById('boss-hp-text').style.color = isEnrage ? ENRAGE_COLOR : (b.elemMode && ELEMENTS[b.elemMode] ? ELEMENTS[b.elemMode].color : '#fff');
   } else {
     bossBox.classList.add('hidden');
   }
@@ -2539,6 +2558,7 @@ function startGame() {
   ELEM_KEYS.forEach(k => G.proficiency[k] = 0);
   G.boss = null; G.evacPoint = null;
   G.buffs = {}; G.spellCDs = {}; G.castFx = null; G.enhanceDrops = [];
+  G.enhanceUnlocked = []; G.enhanceDropped = []; // 强化法术不跨局保留，每局重新解锁
   G.unsaved = false;
   G.gesturePts = []; G.isDrawing = false; G.joy.active = false;
   G.shake = 0; G.fbTimer = 0;
