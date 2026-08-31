@@ -36,6 +36,9 @@ button:hover{transform:scale(1.05)}
 .mslot .key{position:absolute;top:-2px;right:-2px;font-size:9px;background:#333;border-radius:3px;padding:0 3px;color:#999}
 #spell-fb{position:absolute;top:35%;left:50%;transform:translate(-50%,-50%);font-size:28px;font-weight:bold;text-shadow:0 0 10px currentColor;opacity:0;transition:opacity .3s;pointer-events:none;text-align:center;white-space:nowrap}
 #hint{position:absolute;bottom:68px;left:50%;transform:translateX(-50%);color:#666;font-size:12px}
+#buff-info{position:absolute;top:10px;left:50%;transform:translateX(-50%);display:flex;gap:6px;pointer-events:none}
+.buff-chip{padding:2px 8px;border-radius:10px;font-size:12px;font-weight:bold;white-space:nowrap;animation:buffPulse 1s ease-in-out infinite alternate}
+@keyframes buffPulse{from{opacity:0.7}to{opacity:1}}
 .stats{color:#aaa;font-size:16px;line-height:2;text-align:center}
 .stats span{color:#9df74f;font-weight:bold;font-size:18px}
 .btn-row{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-top:16px}
@@ -117,6 +120,7 @@ button:hover{transform:scale(1.05)}
   <div id="spell-fb"></div>
   <div id="hint">选择材料后在屏幕上画手势施法</div>
   <div id="adv-info"></div>
+  <div id="buff-info"></div>
   <div id="ctrl-btns">
     <button class="ctrl-btn" id="pause-btn" title="暂停 (P/Esc)">❚❚</button>
   </div>
@@ -145,61 +149,87 @@ button:hover{transform:scale(1.05)}
 
 <div id="start-screen" class="overlay">
   <h1>魔法远征</h1>
-  <p class="subtitle">材料 + 手势 = 法术</p>
-  <div class="panel" id="ctrl-pc">
-    <h3>操作方式</h3>
-    <p>移动: WASD / 方向键<br>施法: 选择材料后鼠标画手势<br>切换材料: 数字键1-6 或点击下方材料槽</p>
+  <p class="subtitle">MAHO EXPEDITION</p>
+
+  <div class="panel" id="ctrl-pc" style="text-align:center;">
+    <h3>操控方式</h3>
+    <p>移动: WASD / 上下左右；施法: 鼠标绘制图形；<br>切换材料: 数字1~6或鼠标点击</p>
   </div>
+
   <div class="panel" id="ctrl-mobile" style="display:none">
-    <h3>触屏操作</h3>
+    <h3>操控方式</h3>
     <p>
-      <span style="color:#4fc3f7">左半屏</span> 虚拟摇杆移动<br>
-      <span style="color:#ff6b35">右半屏</span> 滑动画手势施法<br>
-      <span style="color:#66bb6a">底部</span> 点击材料槽切换元素
+      <span style="color:#4fc3f7">左半屏</span> 摇杆移动<br>
+      <span style="color:#ff6b35">右半屏</span> 轨迹施法<br>
+      <span style="color:#66bb6a">底部</span> 点击材料切换元素
     </p>
   </div>
-  <div class="panel">
+
+  <div class="panel" style="text-align:center;">
+    <button id="start-btn">开启冒险</button>
+    <div id="adv-display" class="adv-display"></div>
+    <button id="continue-btn" class="btn-sec hidden">继续游戏</button>
+  </div>
+
+  <div class="panel" style="text-align:center;">
+    <h3>元素克制</h3>
+    <p>
+      <b style="color:#ff6b35">火</b> 克 <b style="color:#6ff863">木</b> │
+      <b style="color:#6ff863">木</b> 克 <b style="color:#fdd835">土</b> │
+      <b style="color:#fdd835">土</b> 克 <b style="color:#dd4bf7">雷</b><br>
+      <b style="color:#dd4bf7">雷</b> 克 <b style="color:#ffffff">冰</b> │
+      <b style="color:#ffffff">冰</b> 克 <b style="color:#7fe2fd">水</b> │
+      <b style="color:#7fe2fd">水</b> 克 <b style="color:#ff6b35">火</b>
+    </p>
+  </div>
+
+  <div class="panel" style="text-align:center;">
     <h3>手势对应</h3>
     <div class="gesture-icons">
-      <div class="gi"><svg viewBox="0 0 40 40"><path d="M6 20 L34 20" stroke="#4fc3f7" stroke-width="3" fill="none" stroke-linecap="round"/></svg>直线(2星)→单体</div>
-      <div class="gi"><svg viewBox="0 0 40 40"><circle cx="20" cy="20" r="13" stroke="#4fc3f7" stroke-width="2.5" fill="none"/></svg>圆形(3星)→范围</div>
-      <div class="gi" style="opacity:0.3"><svg viewBox="0 0 40 40"><path d="M8 8 L32 8 L32 32 L8 32 Z" stroke="#888" stroke-width="2.5" fill="none" stroke-linejoin="round"/></svg>四星以上 敬请期待</div>
+      <div class="gi">
+        <svg viewBox="0 0 40 40"><path d="M6 20 L34 20" stroke="#4fc3f7" stroke-width="3" fill="none" stroke-linecap="round"/></svg>
+        直线(1星)→单体
+      </div>
+      <div class="gi">
+        <svg viewBox="0 0 40 40"><circle cx="20" cy="20" r="13" stroke="#4fc3f7" stroke-width="2.5" fill="none"/></svg>
+        圆形(2星)→范围
+      </div>
+      <div class="gi">
+        <svg viewBox="0 0 40 40"><path d="M8 8 L20 28 L32 8" stroke="#4fc3f7" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        折线(3星)→强化
+      </div>
     </div>
-  </div>
-  <div class="panel">
-    <h3>2星法术（直线·单体）</h3>
+
+    <h3>1星法术（直线·单体）</h3>
     <p>
-      <b style="color:#ff6b35">火</b> 投掷 灼烧 | <b style="color:#6ff863">木</b> 选中 束缚<br>
-      <b style="color:#fdd835">土</b> 投掷 分裂 | <b style="color:#dd4bf7">雷</b> 折线 远程<br>
-      <b style="color:#fff">冰</b> 投掷 减速 | <b style="color:#7fe2fd">水</b> 线段 近程
+      <b style="color:#ff6b35">火</b> 投掷 灼烧 │ <b style="color:#6ff863">木</b> 选中 束缚<br>
+      <b style="color:#fdd835">土</b> 投掷 分裂 │ <b style="color:#dd4bf7">雷</b> 折线 远程<br>
+      <b style="color:#ffffff">冰</b> 投掷 减速 │ <b style="color:#7fe2fd">水</b> 线段 近程
     </p>
-  </div>
-  <div class="panel">
-    <h3>3星法术（圆形·范围）</h3>
+    <p style="font-size:11px;color:#888">消耗1 · 无冷却</p>
+
+    <h3>2星法术（圆形·范围）</h3>
     <p>
       <b style="color:#ff6b35">火</b> 扇形 大范围伤害<br>
       <b style="color:#6ff863">木</b> 召唤树灵 嘲讽输出<br>
       <b style="color:#fdd835">土</b> 城墙防御 弹反怪物<br>
       <b style="color:#dd4bf7">雷</b> 追踪目标 连锁反应<br>
-      <b style="color:#fff">冰</b> 冰冻敌人 造成伤害<br>
+      <b style="color:#ffffff">冰</b> 冰冻敌人 造成伤害<br>
       <b style="color:#7fe2fd">水</b> 治疗领域 持续回血
     </p>
-  </div>
-  <div class="panel">
-    <h3>元素克制</h3>
-    <p style="line-height:2">
-      <b style="color:#ff6b35">火</b> 克 <b style="color:#6ff863">木</b> |
-      <b style="color:#6ff863">木</b> 克 <b style="color:#fdd835">土</b> |
-      <b style="color:#fdd835">土</b> 克 <b style="color:#dd4bf7">雷</b><br>
-      <b style="color:#dd4bf7">雷</b> 克 <b style="color:#fff">冰</b> |
-      <b style="color:#fff">冰</b> 克 <b style="color:#7fe2fd">水</b> |
-      <b style="color:#7fe2fd">水</b> 克 <b style="color:#ff6b35">火</b><br>
-      克制伤害×1.5 被克减半×0.5
+    <p style="font-size:11px;color:#888">消耗2 · 无冷却</p>
+
+    <h3>3星法术（折线·增益）</h3>
+    <p>
+      <b style="color:#ff6b35">火</b> 增伤 扩大范围<br>
+      <b style="color:#6ff863">木</b> 增伤 治愈树灵<br>
+      <b style="color:#fdd835">土</b> 增伤 加固城墙<br>
+      <b style="color:#dd4bf7">雷</b> 增伤 增加连击<br>
+      <b style="color:#ffffff">冰</b> 增伤 强化减速<br>
+      <b style="color:#7fe2fd">水</b> 增伤 强化治疗
     </p>
+    <p style="font-size:11px;color:#888">消耗3 · 冷却5s · 持续10s · 第2Boss后解锁</p>
   </div>
-  <button id="start-btn">开始冒险</button>
-  <div id="adv-display" class="adv-display"></div>
-  <button id="continue-btn" class="btn-sec hidden">继续游戏</button>
 </div>
 
 <div id="gameover-screen" class="overlay hidden">
@@ -225,28 +255,28 @@ const UNIT = 100; // 1单位 = 100像素
 
 const ELEMENTS = {
   fire:    { name:'火', color:'#ff6b35', icon:'\u{1F525}' },
-  earth:   { name:'土', color:'#fdd835', icon:'\u26F0' },
-  water:   { name:'水', color:'#7fe2fd', icon:'\u{1F4A7}' },
   wood:    { name:'木', color:'#6ff863', icon:'\u{1F33F}' },
-  ice:     { name:'冰', color:'#ffffff', icon:'\u2744' },
+  earth:   { name:'土', color:'#fdd835', icon:'\u26F0' },
   thunder: { name:'雷', color:'#dd4bf7', icon:'\u26A1' },
+  ice:     { name:'冰', color:'#ffffff', icon:'\u2744' },
+  water:   { name:'水', color:'#7fe2fd', icon:'\u{1F4A7}' },
 };
 const ELEM_KEYS = ['fire','wood','earth','thunder','ice','water'];
 
-// 2星(直线LINE)单体法术: 水为线段、雷为折线、其他为投掷物
-// 3星(圆形CIRCLE)范围法术: 各元素不同效果
+// 1星(直线LINE)单体法术: 水为线段、雷为折线、其他为投掷物
+// 2星(圆形CIRCLE)范围法术: 各元素不同效果
 const SPELLS = [
-  // === LINE (2星) 单体法术 ===
-  { id:'fire_line',    name:'火球术',     elem:'fire',    gesture:'LINE', cost:1, type:'projectile', dmg:2, range:3*UNIT, r:8, splash:true },
+  // === LINE (1星) 单体法术 ===
+  { id:'fire_line',    name:'火球术',     elem:'fire',    gesture:'LINE', cost:1, type:'projectile', dmg:2, range:3*UNIT, r:10, splash:true },
   { id:'wood_line',    name:'藤蔓缠绕',   elem:'wood',    gesture:'LINE', cost:1, type:'instant', dmg:1, range:3*UNIT, fx:'bind' },
-  { id:'earth_line',   name:'碎石弹',   elem:'earth',   gesture:'LINE', cost:1, type:'projectile', dmg:2, trackRange:4*UNIT, r:9 },
+  { id:'earth_line',   name:'碎石弹',   elem:'earth',   gesture:'LINE', cost:1, type:'projectile', dmg:2, trackRange:4*UNIT, r:8 },
   { id:'thunder_line', name:'晴空霹雳',     elem:'thunder', gesture:'LINE', cost:1, type:'zigzag',      dmg:2, len:3*UNIT },
-  { id:'ice_line',     name:'冰锥术',     elem:'ice',     gesture:'LINE', cost:1, type:'projectile', dmg:2, range:3*UNIT, r:8 },
+  { id:'ice_line',     name:'冰锥术',     elem:'ice',     gesture:'LINE', cost:1, type:'projectile', dmg:2, range:3*UNIT, r:8, slow:true },
   { id:'water_line',   name:'龙王一喷',     elem:'water',   gesture:'LINE', cost:1, type:'line',        dmg:3, len:2*UNIT },
-  // === CIRCLE (3星) 范围法术 ===
+  // === CIRCLE (2星) 范围法术 ===
   { id:'fire_circle',  name:'烈焰扇',   elem:'fire',    gesture:'CIRCLE', cost:2, type:'fan',      dmg:4, radius:3*UNIT, angle:Math.PI*2/3 },
   { id:'wood_circle',  name:'树灵召唤', elem:'wood',    gesture:'CIRCLE', cost:2, type:'summon',   spiritHp:20, dur:9999 },
-  { id:'earth_circle', name:'守护之墙',     elem:'earth',   gesture:'CIRCLE', cost:2, type:'wall',     size:2*UNIT, dur:30*60, wallHp:50 },
+  { id:'earth_circle', name:'守护之墙',     elem:'earth',   gesture:'CIRCLE', cost:2, type:'wall',     size:2*UNIT, dur:60*60, wallHp:50 },
   { id:'thunder_circle',name:'雷の呼吸·壹之型', elem:'thunder', gesture:'CIRCLE', cost:2, type:'chain',    dmg:3, range:3*UNIT, maxJumps:8 },
   { id:'ice_circle',   name:'千里冰封',     elem:'ice',     gesture:'CIRCLE', cost:2, type:'freeze',   radius:2*UNIT, dmg:3, freezeMon:6*60, freezeBoss:3*60 },
   { id:'water_circle', name:'春风化雨', elem:'water',   gesture:'CIRCLE', cost:2, type:'healzone', radius:2*UNIT, healRate:10, dur:5*60 },
@@ -254,13 +284,25 @@ const SPELLS = [
 const SPELL_MAP = {};
 SPELLS.forEach(s => { SPELL_MAP[s.elem + '|' + s.gesture] = s; });
 
+// === 3星(CHEVRON) 强化法术 === 消耗3材料, 10s持续, 5s冷却, 可叠加
+const ENHANCE_SPELLS = [
+  { id:'fire_chevron',    name:'怒火中烧', elem:'fire',    gesture:'CHEVRON', cost:3, dur:600, cd:300, desc:'火伤+50% 弹径+25%' },
+  { id:'wood_chevron',    name:'万物生',   elem:'wood',    gesture:'CHEVRON', cost:3, dur:600, cd:300, desc:'木伤+50% 树灵全愈' },
+  { id:'earth_chevron',   name:'不动如山', elem:'earth',   gesture:'CHEVRON', cost:3, dur:600, cd:300, desc:'土伤+50% 城墙血+50%' },
+  { id:'thunder_chevron', name:'雷霆万钧', elem:'thunder', gesture:'CHEVRON', cost:3, dur:600, cd:300, desc:'雷伤+50% 跳数+25%' },
+  { id:'ice_chevron',     name:'寒霜降',   elem:'ice',     gesture:'CHEVRON', cost:3, dur:600, cd:300, desc:'冰伤+50% 减速+50%' },
+  { id:'water_chevron',   name:'川流不息', elem:'water',   gesture:'CHEVRON', cost:3, dur:600, cd:300, desc:'水伤+50% 治疗+50%' },
+];
+const ENHANCE_MAP = {};
+ENHANCE_SPELLS.forEach(s => { ENHANCE_MAP[s.elem + '|' + s.gesture] = s; });
+
 const ENEMY_TYPES = {
-  slime:   { name:'水史莱姆', elem:'water',   hp:3, spd:1.0, dmg:4, r:18, drop:'water',   ai:'chase'  },
-  wolf:    { name:'土野狼',   elem:'earth',   hp:3, spd:1.5, dmg:3, r:15, drop:'earth',   ai:'charge' },
-  bat:     { name:'雷蝙蝠',   elem:'thunder', hp:2, spd:2.0, dmg:2, r:12, drop:'thunder', ai:'swarm'  },
-  spirit:  { name:'木精',     elem:'wood',    hp:6, spd:.8,  dmg:4, r:16, drop:'wood',    ai:'ranged', atkRange:200, atkCD:120, elite:true },
-  firebug: { name:'熔岩虫',   elem:'fire',    hp:4, spd:1.0, dmg:3, r:14, drop:'fire',    ai:'chase'  },
-  iceshard:{ name:'雪怪',    elem:'ice',     hp:3, spd:1.2, dmg:4, r:13, drop:'ice',     ai:'swarm'  },
+  slime:   { name:'水史莱姆', elem:'water',   hp:3, spd:1.0, dmg:4, r:13, drop:'water',   ai:'chase'  },
+  wolf:    { name:'土野狼',   elem:'earth',   hp:3, spd:1.5, dmg:3, r:14, drop:'earth',   ai:'charge' },
+  bat:     { name:'雷蝙蝠',   elem:'thunder', hp:3, spd:2.0, dmg:2, r:12, drop:'thunder', ai:'swarm'  },
+  spirit:  { name:'木精',     elem:'wood',    hp:6, spd:.75,  dmg:4, r:20, drop:'wood',    ai:'ranged', atkRange:200, atkCD:120, elite:true },
+  firebug: { name:'熔岩虫',   elem:'fire',    hp:4, spd:1.0, dmg:3, r:15, drop:'fire',    ai:'chase'  },
+  iceshard:{ name:'雪怪',    elem:'ice',     hp:3, spd:1.2, dmg:4, r:16, drop:'ice',     ai:'swarm'  },
 };
 
 const COUNTERS = {
@@ -280,7 +322,7 @@ const WAVE_TABLE = [
 const BOSS_INTERVAL = 3;
 const BOSS_TYPES = {
   fairy: {
-    name: '腐化妖精', hp: 60, spd: 1.0, dmg: 8, r: 25,
+    name: '腐化妖精', hp: 60, spd: 1.0, dmg: 8, r: 30,
     switchElems: ['fire', 'thunder'],
     phases: [
       { hpPct: 1.0,  weak: 'water',  resist: 'wood',   name: '火属性',   elemMode: 'fire',    immune: '',   summon: 'firebug', summonCD: 360, spdMult: 1.0 },
@@ -289,7 +331,7 @@ const BOSS_TYPES = {
     ],
   },
   golem: {
-    name: '深渊魔像', hp: 70, spd: 0.8, dmg: 8, r: 35,
+    name: '深渊魔像', hp: 60, spd: 0.75, dmg: 8, r: 40,
     switchElems: ['ice', 'water'],
     phases: [
       { hpPct: 1.0,  weak: 'thunder', resist: 'water', name: '冰属性', elemMode: 'ice',    immune: '', summon: 'iceshard', summonCD: 360, spdMult: 1.0 },
@@ -302,6 +344,8 @@ const BOSS_TYPES = {
 const PROF_MAX = 100;
 const PROF_PER_CAST = 1;       // 每次施法造成伤害或回血+1
 const PROF_BONUS_PER_50 = 0.10; // 每50点熟练度+10%伤害
+const ICE_SLOW = 0.2;           // 冰锥减速参数（可被增益调整）
+const SLOW_DECAY = 180;        // 每3s(180帧)衰减1层
 
 // ======================== 工具函数 ========================
 const TAU = Math.PI * 2;
@@ -429,7 +473,39 @@ function recognizeGesture(rawPts) {
   const curveRatio = plen / Math.max(startEnd, 1);
   const aspectRatio = Math.min(bb.w, bb.h) / Math.max(bb.w, bb.h, 1);
   if (curveRatio > 1.3 && aspectRatio > 0.25) {
-    return {type:'CIRCLE', score: 0.8};
+    // Circle has points on BOTH sides of start-end line; chevron has all on one side
+    let sides = 0;
+    const dxSE = pts[pts.length-1].x - pts[0].x, dySE = pts[pts.length-1].y - pts[0].y;
+    for (let i = 1; i < pts.length - 1; i++) {
+      const cross = dxSE * (pts[i].y - pts[0].y) - dySE * (pts[i].x - pts[0].x);
+      if (cross > 5) sides |= 1;
+      else if (cross < -5) sides |= 2;
+      if (sides === 3) break;
+    }
+    if (sides === 3) return {type:'CIRCLE', score: 0.8};
+  }
+
+  // Chevron detection: V-shape with single bend (angle 30-150°)
+  if (startEnd > 30) {
+    let maxOff = 0, bendIdx = 0;
+    for (let i = 1; i < pts.length - 1; i++) {
+      const d = pointToLineDist(pts[i].x, pts[i].y, pts[0].x, pts[0].y, pts[pts.length-1].x, pts[pts.length-1].y);
+      if (d > maxOff) { maxOff = d; bendIdx = i; }
+    }
+    if (maxOff > 15) {
+      const bp = pts[bendIdx], sp = pts[0], ep = pts[pts.length-1];
+      const v1x = sp.x - bp.x, v1y = sp.y - bp.y;
+      const v2x = ep.x - bp.x, v2y = ep.y - bp.y;
+      const dot = v1x*v2x + v1y*v2y;
+      const m1 = Math.hypot(v1x, v1y), m2 = Math.hypot(v2x, v2y);
+      if (m1 > 1 && m2 > 1) {
+        const ang = Math.acos(clamp(dot / (m1 * m2), -1, 1));
+        const angDeg = ang * 180 / Math.PI;
+        if (angDeg >= 30 && angDeg <= 150) {
+          return {type:'CHEVRON', score: 0.85};
+        }
+      }
+    }
   }
 
   // Template match for LINE only
@@ -483,6 +559,12 @@ const G = {
   adventureLevel: 1,
   proficiency: {},
   unsaved: false,
+  buffs: {},
+  spellCDs: {},
+  enhanceUnlocked: [],
+  enhanceDropped: [],
+  enhanceDrops: [],
+  castFx: null,
 };
 
 const SAVE_KEY = 'element_expedition_save';
@@ -526,7 +608,7 @@ function spawnEnemy(type) {
   const hpBonus = Math.floor((G.wave - 1) / 3) * (t.elite ? 2 : 1);
   G.enemies.push({
     type, x, y, vx:0, vy:0, r:t.r, hp:t.hp + hpBonus, maxHp:t.hp + hpBonus,
-    facing:0, hitFlash:0, slowT:0, slowStacks:0, freezeT:0, rootT:0,
+    facing:0, hitFlash:0, slowStacks:0, slowDecayT:0, freezeT:0, rootT:0,
     atkCD: t.atkCD||0, chargeT:0, swarmAngle:rand(0,TAU),
   });
 }
@@ -576,9 +658,34 @@ function findNearestEnemy(x, y) {
 function tryCastSpell(gestureType) {
   if (gestureType === 'NONE') return;
   const key = G.selectedMat + '|' + gestureType;
+
+  // 3-star enhancement spells (CHEVRON)
+  if (gestureType === 'CHEVRON') {
+    const spell = ENHANCE_MAP[key];
+    if (!spell || !G.enhanceUnlocked.includes(spell.id)) {
+      showFeedback('该法术未解锁', '#888');
+      return;
+    }
+    const cd = G.spellCDs[spell.id] || 0;
+    if (cd > 0) {
+      showFeedback('冷却中...', '#888');
+      return;
+    }
+    if (G.materials[G.selectedMat] < spell.cost) {
+      showFeedback(ELEMENTS[G.selectedMat].name + '不足', '#f44336');
+      return;
+    }
+    G.materials[G.selectedMat] -= spell.cost;
+    G.unsaved = true;
+    castEnhanceSpell(spell);
+    showFeedback(spell.name + '！', ELEMENTS[spell.elem].color);
+    return;
+  }
+
+  // Normal 1-star / 2-star spells
   const spell = SPELL_MAP[key];
   if (!spell) {
-    showFeedback('四星以上敬请期待', '#888');
+    showFeedback('未知法术', '#888');
     return;
   }
   if (G.materials[G.selectedMat] < spell.cost) {
@@ -602,12 +709,6 @@ function isInsideWall(x, y) {
 
 function castSpell(spell) {
   const p = G.player;
-  const wall = isInsideWall(p.x, p.y);
-  if (wall) {
-    showFeedback('被困墙中，无法施法！', '#f44336');
-    G.materials[spell.elem] += spell.cost; // refund
-    return;
-  }
 
   if (spell.type === 'instant') {
     // 木：选中最近敌人，直接施加伤害+束缚，无投掷过程
@@ -657,56 +758,76 @@ function castSpell(spell) {
     const isEarth = spell.elem === 'earth';
     G.projectiles.push({
       x:p.x, y:p.y, vx:Math.cos(ang)*6, vy:Math.sin(ang)*6,
-      dmg:spell.dmg, elem:spell.elem, r:spell.r,
+      dmg:spell.dmg, elem:spell.elem, r: spell.elem === 'fire' ? spell.r * getBuffFireRadiusMult() : spell.r,
       life: isEarth ? 300 : 100,
       range: isEarth ? null : spell.range, traveled:0, fx:spell.fx||null,
       hitSet:new Set(), canSplit: isEarth, splitDir: ang,
+      slow: spell.slow || false,
     });
   } else if (spell.type === 'line') {
-    // 水：2单位长度线段，伤害3，追踪最近敌人，停留1s持续伤害
+    // 水：2单位长度线段，伤害3，一次性伤害，1s视觉效果
     const target = findNearestEnemy(p.x, p.y);
     const ang = target ? Math.atan2(target.y-p.y, target.x-p.x) : p.facing;
     const ex = p.x + Math.cos(ang)*spell.len, ey = p.y + Math.sin(ang)*spell.len;
-    G.lineEffects.push({type:'water', x1:p.x, y1:p.y, x2:ex, y2:ey, elem:spell.elem, life:60, color:ELEMENTS[spell.elem].color, width:18, dmg:spell.dmg});
+    G.lineEffects.push({type:'water', x1:p.x, y1:p.y, x2:ex, y2:ey, elem:spell.elem, life:60, color:ELEMENTS[spell.elem].color, width:15});
     let hitAny = false;
+    const hitRange = 12;
     for (const e of G.enemies) {
-      if (pointToLineDist(e.x, e.y, p.x, p.y, ex, ey) < e.r + 12) {
-        damageEnemy(e, spell.dmg, spell.elem); e.waterCD = 48; hitAny = true;
+      if (pointToLineDist(e.x, e.y, p.x, p.y, ex, ey) < e.r + hitRange) {
+        damageEnemy(e, spell.dmg, spell.elem); hitAny = true;
       }
     }
-    if (G.boss && pointToLineDist(G.boss.x, G.boss.y, p.x, p.y, ex, ey) < G.boss.r + 12) {
-      damageBoss(spell.dmg, spell.elem); G.boss.waterCD = 48; hitAny = true;
+    if (G.boss && pointToLineDist(G.boss.x, G.boss.y, p.x, p.y, ex, ey) < G.boss.r + hitRange) {
+      damageBoss(spell.dmg, spell.elem); hitAny = true;
     }
     if (hitAny) addProf(spell.elem);
   } else if (spell.type === 'zigzag') {
-    // 雷：3单位长度折线，伤害2，追踪最近敌人
-    const target = findNearestEnemy(p.x, p.y);
-    const ang = target ? Math.atan2(target.y-p.y, target.x-p.x) : p.facing;
-    const segs = [];
-    let cx = p.x, cy = p.y;
-    const zigLen = spell.len / 4;
-    for (let i=0; i<4; i++) {
-      const offset = (i % 2 === 0 ? 1 : -1) * 15;
-      const perp = ang + Math.PI/2;
-      const nx = cx + Math.cos(ang)*zigLen + Math.cos(perp)*offset;
-      const ny = cy + Math.sin(ang)*zigLen + Math.sin(perp)*offset;
-      segs.push({x1:cx, y1:cy, x2:nx, y2:ny});
-      cx = nx; cy = ny;
+    // 雷：闪电⚡，两折(3段)，最宽0.6单位，长3单位
+    const totalLen = spell.len;
+    const maxOffset = 0.3 * UNIT; // 0.3单位，最宽0.6单位
+    let target = null, md = totalLen;
+    for (const e of G.enemies) {
+      const d = Math.hypot(e.x-p.x, e.y-p.y);
+      if (d < md) { md=d; target=e; }
     }
-    G.lineEffects.push({type:'zigzag', segs, elem:spell.elem, life:30, color:ELEMENTS[spell.elem].color, width:8});
+    if (G.boss) {
+      const d = Math.hypot(G.boss.x-p.x, G.boss.y-p.y);
+      if (d < md) { md=d; target=G.boss; }
+    }
+    const ang = target ? Math.atan2(target.y-p.y, target.x-p.x) : p.facing;
+    const perp = ang + Math.PI/2;
+    // 3段2折的闪电形状：偏移 +max, -max, 0（回到主轴）
+    const segs = [];
+    let prevX = p.x, prevY = p.y;
+    const offsets = [maxOffset, -maxOffset, 0];
+    for (let i=0; i<3; i++) {
+      const axisDist = (i+1) * totalLen / 3;
+      const nx = p.x + Math.cos(ang)*axisDist + Math.cos(perp)*offsets[i];
+      const ny = p.y + Math.sin(ang)*axisDist + Math.sin(perp)*offsets[i];
+      segs.push({x1:prevX, y1:prevY, x2:nx, y2:ny});
+      prevX = nx; prevY = ny;
+    }
+    G.lineEffects.push({type:'zigzag', segs, elem:spell.elem, life:30, color:ELEMENTS[spell.elem].color, width:10});
     let hitAny = false;
     const hitSet = new Set();
+    const hitRange = 8; 
     for (const seg of segs) {
       for (const e of G.enemies) {
         if (hitSet.has(e)) continue;
-        if (pointToLineDist(e.x, e.y, seg.x1, seg.y1, seg.x2, seg.y2) < e.r + 6) {
+        if (pointToLineDist(e.x, e.y, seg.x1, seg.y1, seg.x2, seg.y2) < e.r + hitRange) {
           hitSet.add(e); damageEnemy(e, spell.dmg, spell.elem); hitAny = true;
         }
       }
-      if (G.boss && !hitSet.has(G.boss) && pointToLineDist(G.boss.x, G.boss.y, seg.x1, seg.y1, seg.x2, seg.y2) < G.boss.r + 6) {
+      if (G.boss && !hitSet.has(G.boss) && pointToLineDist(G.boss.x, G.boss.y, seg.x1, seg.y1, seg.x2, seg.y2) < G.boss.r + hitRange) {
         hitSet.add(G.boss); damageBoss(spell.dmg, spell.elem); hitAny = true;
       }
     }
+    // 保证必定经过目标敌人（改为与水线段相同的折线判定）
+    // if (target && !hitSet.has(target)) {
+    //   if (target === G.boss) damageBoss(spell.dmg, spell.elem);
+    //   else damageEnemy(target, spell.dmg, spell.elem);
+    //   hitSet.add(target); hitAny = true;
+    // }
     if (hitAny) addProf(spell.elem);
   } else if (spell.type === 'fan') {
     // 火：正前方90度扇形，半径3单位，伤害4
@@ -733,11 +854,12 @@ function castSpell(spell) {
     if (hitAny) addProf(spell.elem);
   } else if (spell.type === 'healzone') {
     // 水：圆形治疗领域，半径2单位，5s内每秒回复10血
-    G.healZones.push({x:p.x, y:p.y, r:spell.radius, healRate:spell.healRate, timer:0, life:spell.dur});
+    G.healZones.push({x:p.x, y:p.y, r:spell.radius, healRate:Math.round(spell.healRate * getBuffHealMult()), timer:0, life:spell.dur});
     addParticles(p.x, p.y, '#42a5f5', 20, 3, 40);
   } else if (spell.type === 'wall') {
-    // 土：正方形城墙，边长3单位，持续8s
-    G.walls.push({x:p.x, y:p.y, size:spell.size, hp:spell.wallHp, maxHp:spell.wallHp, life:spell.dur});
+    // 土：正方形城墙，边长2单位
+    const wallHp = Math.round(spell.wallHp * getBuffWallHpMult());
+    G.walls.push({x:p.x, y:p.y, size:spell.size, hp:wallHp, maxHp:wallHp, life:spell.dur});
     // 推斥敌人
     for (const e of G.enemies) {
       const d = dist(e, {x:p.x, y:p.y});
@@ -757,7 +879,7 @@ function castSpell(spell) {
     }
     addProf(spell.elem);
   } else if (spell.type === 'summon') {
-    // 木：召唤树灵，血量20，嘲讽，每秒1伤害
+    // 木：召唤树灵，血量20，嘲讽
     G.treeSpirits.push({
       x: p.x + Math.cos(p.facing)*40, y: p.y + Math.sin(p.facing)*40,
       vx:0, vy:0, r:18, hp:spell.spiritHp, maxHp:spell.spiritHp, atkTimer:0, hitFlash:0, atkFx:0,
@@ -770,7 +892,7 @@ function castSpell(spell) {
     let from = {x:p.x, y:p.y};
     const allTargets = [...G.enemies];
     if (G.boss) allTargets.push(G.boss);
-    for (let j=0; j<spell.maxJumps; j++) {
+    for (let j=0; j<Math.round(spell.maxJumps * getBuffMaxJumpsMult()); j++) {
       let nearest=null, md=spell.range;
       for (const e of allTargets) {
         if (hit.has(e)) continue;
@@ -785,7 +907,7 @@ function castSpell(spell) {
       from = {x:nearest.x, y:nearest.y};
     }
     if (targets.length > 0) {
-      G.lineEffects.push({type:'chain', segs:targets, elem:'thunder', life:30, color:ELEMENTS.thunder.color});
+      G.lineEffects.push({type:'chain', segs:targets, elem:'thunder', life:45, color:ELEMENTS.thunder.color});
       G.shake = 8;
       for (const t of targets) {
         addParticles(t.x2, t.y2, '#ab47bc', 8, 5, 25);
@@ -795,7 +917,7 @@ function castSpell(spell) {
     }
   } else if (spell.type === 'freeze') {
     // 冰：冻结半径2单位内小怪6s/Boss 3s，造成3伤害
-    G.lineEffects.push({type:'circle', x:p.x, y:p.y, r:spell.radius, elem:spell.elem, life:20, color:ELEMENTS[spell.elem].color});
+    G.lineEffects.push({type:'circle', x:p.x, y:p.y, r:spell.radius, elem:spell.elem, life:30, color:ELEMENTS[spell.elem].color});
     let hitAny = false;
     for (const e of G.enemies) {
       if (dist(e, p) < spell.radius + e.r) {
@@ -811,6 +933,82 @@ function castSpell(spell) {
     }
     G.shake = 6;
     if (hitAny) addProf(spell.elem);
+  }
+}
+
+// ======================== 强化法术 Buff 系统 ========================
+function castEnhanceSpell(spell) {
+  const elem = spell.elem;
+  const existing = G.buffs[elem];
+  if (existing && existing.timer > 0) {
+    existing.stacks++;
+  } else {
+    G.buffs[elem] = { timer: spell.dur, stacks: 1, healTick: elem === 'wood' ? 300 : 0 };
+    if (elem === 'wood') healAllTreeSpirits();
+  }
+  if (elem === 'wood') G.buffs[elem].healTick = 300;
+  G.spellCDs[spell.id] = spell.cd;
+  G.castFx = { elem, timer: 30 };
+  addParticles(G.player.x, G.player.y, ELEMENTS[elem].color, 25, 6, 40);
+  G.shake = 4;
+}
+
+function healAllTreeSpirits() {
+  for (const s of G.treeSpirits) {
+    s.hp = s.maxHp;
+    addParticles(s.x, s.y, '#66bb6a', 15, 3, 30);
+    addFloatText(s.x, s.y - s.r - 5, '全恢复', '#66bb6a');
+  }
+}
+
+function getBuffMult(elem) {
+  const b = G.buffs[elem];
+  if (!b || b.timer <= 0) return 1;
+  return 1 + 0.5 * b.stacks;
+}
+function getBuffFireRadiusMult() {
+  const b = G.buffs['fire'];
+  if (!b || b.timer <= 0) return 1;
+  return 1 + 0.25 * b.stacks;
+}
+function getBuffMaxJumpsMult() {
+  const b = G.buffs['thunder'];
+  if (!b || b.timer <= 0) return 1;
+  return 1 + 0.25 * b.stacks;
+}
+function getBuffWallHpMult() {
+  const b = G.buffs['earth'];
+  if (!b || b.timer <= 0) return 1;
+  return 1 + 0.5 * b.stacks;
+}
+function getBuffHealMult() {
+  const b = G.buffs['water'];
+  if (!b || b.timer <= 0) return 1;
+  return 1 + 0.5 * b.stacks;
+}
+function getBuffSlowMult() {
+  const b = G.buffs['ice'];
+  if (!b || b.timer <= 0) return 1;
+  return 1 + 0.5 * b.stacks;
+}
+
+function updateBuffs() {
+  for (const elem of ELEM_KEYS) {
+    const b = G.buffs[elem];
+    if (!b || b.timer <= 0) continue;
+    b.timer--;
+    if (b.healTick > 0) {
+      b.healTick--;
+      if (b.healTick === 0) healAllTreeSpirits();
+    }
+    if (b.timer <= 0) { b.stacks = 0; }
+  }
+  for (const id in G.spellCDs) {
+    if (G.spellCDs[id] > 0) G.spellCDs[id]--;
+  }
+  if (G.castFx && G.castFx.timer > 0) {
+    G.castFx.timer--;
+    if (G.castFx.timer <= 0) G.castFx = null;
   }
 }
 
@@ -854,7 +1052,8 @@ function damageEnemy(e, baseDmg, elem) {
   if (e.hp <= 0) return;
   const profMult = getProfMult(elem);
   const mult = getDamageMultiplier(elem, e);
-  let dmg = Math.max(1, Math.round(baseDmg * mult * profMult));
+  const buffMult = getBuffMult(elem);
+  let dmg = Math.max(1, Math.round(baseDmg * mult * profMult * buffMult));
   e.hp -= dmg;
   e.hitFlash = 8;
   addFloatText(e.x, e.y - e.r - 5, String(dmg), mult > 1 ? '#ffeb3b' : '#fff');
@@ -868,14 +1067,15 @@ function damageBoss(baseDmg, elem) {
   const profMult = getProfMult(elem);
   const mult = getDamageMultiplier(elem, b);
   if (mult === 0) {
-    addFloatText(b.x, b.y - b.r - 10, '免疫', '#888');
+    addFloatText(b.x, b.y - b.r - 10, '免疫！', '#888');
     return;
   }
-  let dmg = Math.max(1, Math.round(baseDmg * mult * profMult));
+  const buffMult = getBuffMult(elem);
+  let dmg = Math.max(1, Math.round(baseDmg * mult * profMult * buffMult));
   b.hp -= dmg;
   b.hitFlash = 8;
   addFloatText(b.x, b.y - b.r - 10, String(dmg), mult > 1 ? '#ffeb3b' : '#fff');
-  if (mult > 1) addFloatText(b.x, b.y - b.r - 25, 'Boss弱点！', '#ff6b35');
+  if (mult > 1) addFloatText(b.x, b.y - b.r - 25, '克制', '#ff6b35');
 }
 
 function onEnemyDeath(e) {
@@ -937,7 +1137,7 @@ function spawnBoss(type) {
     immune: ph0.immune, elemMode: ph0.elemMode,
     summonCD: ph0.summonCD, summonTimer: ph0.summonCD,
     atkCD: 90, moveT: 0, targetX: W/2, targetY: H/2, freezeT: 0,
-    elemSwitchT: 600,
+    elemSwitchT: 600, slowStacks: 0, slowDecayT: 0,
   };
 }
 
@@ -1051,10 +1251,12 @@ function update() {
   updateParticles();
   updateCrystals();
   updateHealPacks();
+  updateEnhanceDrops();
   updateWalls();
   updateHealZones();
   updateTreeSpirits();
   updateLineEffects();
+  updateBuffs();
   updateEvacPoint();
   updateFloatTexts();
   updateWaves();
@@ -1094,10 +1296,10 @@ function updateEnemies() {
     const e = G.enemies[i];
     const t = ENEMY_TYPES[e.type];
     if (e.hitFlash > 0) e.hitFlash--;
-    if (e.slowT > 0) e.slowT--;
+    if (e.slowStacks > 0) { if (e.slowDecayT > 0) e.slowDecayT--; else { e.slowStacks--; e.slowDecayT = SLOW_DECAY; } }
     if (e.freezeT > 0) { e.freezeT--; e.vx*=0.5; e.vy*=0.5; e.x+=e.vx; e.y+=e.vy; continue; }
     if (e.rootT > 0) { e.rootT--; e.vx*=0.8; e.vy*=0.8; e.x+=e.vx; e.y+=e.vy; continue; }
-    const spd = t.spd * (e.slowT>0 ? 0.4 : 1);
+    const spd = Math.max(0, t.spd - ICE_SLOW * getBuffSlowMult() * (e.slowStacks||0));
     const d = Math.hypot(p.x-e.x, p.y-e.y);
     // Taunt: target nearest tree spirit if within 2 units
     let target = p;
@@ -1231,9 +1433,10 @@ function updateProjectiles() {
           pr.hitSet.add(e);
           damageEnemy(e, pr.dmg, pr.elem);
           if (pr.splash) {
+            // 以命中敌人为中心，pr.r 为爆炸半径，范围内敌人各受一次伤害
             for (const e2 of G.enemies) {
               if (pr.hitSet.has(e2)) continue;
-              if (dist(e, e2) < e.r + e2.r) {
+              if (dist(e, e2) < pr.r) {
                 pr.hitSet.add(e2);
                 damageEnemy(e2, pr.dmg, pr.elem);
                 addParticles(e2.x, e2.y, ELEMENTS[pr.elem].color, 6, 3, 15);
@@ -1241,6 +1444,11 @@ function updateProjectiles() {
             }
           }
           if (pr.fx === 'bind') { e.rootT = 5*60; addFloatText(e.x, e.y-e.r-5, '束缚', '#66bb6a'); }
+          if (pr.slow) {
+            e.slowStacks = (e.slowStacks||0) + 1;
+            e.slowDecayT = SLOW_DECAY;
+            if (e.slowStacks * ICE_SLOW * getBuffSlowMult() >= ENEMY_TYPES[e.type].spd) addFloatText(e.x, e.y-e.r-5, '冻结', '#81d4fa');
+          }
           addParticles(pr.x, pr.y, ELEMENTS[pr.elem].color, 8, 3, 20);
           addProf(pr.elem);
           if (pr.canSplit) splitEarth(pr);
@@ -1250,6 +1458,21 @@ function updateProjectiles() {
       if (G.boss && !pr.hitSet.has(G.boss) && dist(pr, G.boss) < pr.r + G.boss.r) {
         pr.hitSet.add(G.boss);
         damageBoss(pr.dmg, pr.elem);
+        if (pr.splash) {
+          for (const e2 of G.enemies) {
+            if (pr.hitSet.has(e2)) continue;
+            if (dist(G.boss, e2) < pr.r) {
+              pr.hitSet.add(e2);
+              damageEnemy(e2, pr.dmg, pr.elem);
+              addParticles(e2.x, e2.y, ELEMENTS[pr.elem].color, 6, 3, 15);
+            }
+          }
+        }
+        if (pr.slow) {
+          G.boss.slowStacks = (G.boss.slowStacks||0) + 1;
+          G.boss.slowDecayT = SLOW_DECAY;
+          if (G.boss.slowStacks * ICE_SLOW * getBuffSlowMult() >= BOSS_TYPES[G.boss.type].spd) addFloatText(G.boss.x, G.boss.y-G.boss.r-5, '冻结', '#81d4fa');
+        }
         addParticles(pr.x, pr.y, ELEMENTS[pr.elem].color, 12, 4, 25);
         addProf(pr.elem);
         if (pr.canSplit) splitEarth(pr);
@@ -1421,23 +1644,7 @@ function updateLineEffects() {
   for (let i = G.lineEffects.length-1; i >= 0; i--) {
     const le = G.lineEffects[i];
     le.life--;
-    // Water line: continuous damage during 1s persistence
-    if (le.type === 'water' && le.dmg) {
-      for (const e of G.enemies) {
-        if (e.waterCD > 0) { e.waterCD--; continue; }
-        if (pointToLineDist(e.x, e.y, le.x1, le.y1, le.x2, le.y2) < e.r + 10) {
-          damageEnemy(e, le.dmg, le.elem);
-          e.waterCD = 48;
-        }
-      }
-      if (G.boss) {
-        if (G.boss.waterCD > 0) G.boss.waterCD--;
-        else if (pointToLineDist(G.boss.x, G.boss.y, le.x1, le.y1, le.x2, le.y2) < G.boss.r + 10) {
-          damageBoss(le.dmg, le.elem);
-          G.boss.waterCD = 48;
-        }
-      }
-    }
+    
     if (le.life <= 0) G.lineEffects.splice(i, 1);
   }
 }
@@ -1511,7 +1718,8 @@ function updateBoss() {
     b.moveT = 120;
   }
   const spdMult = phase.spdMult || 1;
-  const spd = def.spd * spdMult;
+  if (b.slowStacks > 0) { if (b.slowDecayT > 0) b.slowDecayT--; else { b.slowStacks--; b.slowDecayT = SLOW_DECAY; } }
+  const spd = Math.max(0, def.spd * spdMult - ICE_SLOW * getBuffSlowMult() * (b.slowStacks||0));
   const dx = b.targetX - b.x, dy = b.targetY - b.y;
   const d = Math.hypot(dx, dy);
   if (d > 5) {
@@ -1536,7 +1744,7 @@ function updateBoss() {
       G.enemies.push({
         type: summonType, x: sx, y: sy, vx: 0, vy: 0, r: t.r,
         hp: t.hp + hpBonus, maxHp: t.hp + hpBonus,
-        facing: 0, hitFlash: 0, slowT: 0, freezeT: 0, rootT: 0,
+        facing: 0, hitFlash: 0, slowStacks: 0, slowDecayT: 0, freezeT: 0, rootT: 0,
         atkCD: t.atkCD || 0, chargeT: 0, swarmAngle: rand(0, TAU),
       });
       addParticles(sx, sy, ELEMENTS[t.elem].color, 8, 3, 25);
@@ -1611,15 +1819,26 @@ function onBossDeath() {
   // Spawn evacuation point
   spawnHealPack();
   G.evacPoint = { x: W - 60, y: H / 2, r: 30, pulse: 0 };
-  showFeedback('Boss已击败！前往右侧光圈撤离', '#4fc3f7');
+  showFeedback('Boss被击败！前往右侧光圈撤离(可选)', '#4fc3f7');
   G.boss = null;
   G.waveActive = false;
-  G.waveCD = 600; // 给玩家10秒考虑是否撤离
+  G.waveCD = 1200; // 撤离时间
 
   // Adventure level up
   G.adventureLevel++;
   saveAdventureLevel();
   showFeedback('冒险等级提升至 ' + G.adventureLevel + '！', '#ffeb3b');
+
+  // Enhancement spell drops: 每个Boss随机掉2个(不重复)，3个Boss后集齐6个
+  const remaining = ENHANCE_SPELLS.filter(s => !G.enhanceDropped.includes(s.id));
+  const shuffled = remaining.sort(() => Math.random() - 0.5);
+  const count = Math.min(2, shuffled.length);
+  for (let i = 0; i < count; i++) {
+    spawnEnhanceDrop(shuffled[i].id);
+    G.enhanceDropped.push(shuffled[i].id);
+  }
+  saveEnhanceState();
+  showFeedback('强化法术掉落！拾取以解锁', '#ffeb3b');
 }
 
 function evacuate() {
@@ -1640,6 +1859,57 @@ function loadAdventureLevel() {
   } catch(e) {}
 }
 
+const ENHANCE_KEY = 'element_expedition_enhance';
+
+function saveEnhanceState() {
+  try {
+    localStorage.setItem(ENHANCE_KEY, JSON.stringify({
+      unlocked: G.enhanceUnlocked,
+      dropped: G.enhanceDropped,
+    }));
+  } catch(e) {}
+}
+
+function loadEnhanceState() {
+  try {
+    const data = JSON.parse(localStorage.getItem(ENHANCE_KEY));
+    if (data) {
+      G.enhanceUnlocked = data.unlocked || [];
+      G.enhanceDropped = data.dropped || [];
+    }
+  } catch(e) {}
+}
+
+function spawnEnhanceDrop(spellId) {
+  const p = G.player;
+  const ang = rand(0, TAU);
+  const d = rand(60, 120);
+  const spell = ENHANCE_SPELLS.find(s => s.id === spellId);
+  G.enhanceDrops.push({
+    x: p.x + Math.cos(ang)*d, y: p.y + Math.sin(ang)*d,
+    spellId, r: 16, pulse: 0, elem: spell.elem,
+  });
+}
+
+function updateEnhanceDrops() {
+  const p = G.player;
+  for (let i = G.enhanceDrops.length - 1; i >= 0; i--) {
+    const d = G.enhanceDrops[i];
+    d.pulse += 0.1;
+    if (dist(d, p) < d.r + p.r) {
+      if (!G.enhanceUnlocked.includes(d.spellId)) {
+        G.enhanceUnlocked.push(d.spellId);
+        saveEnhanceState();
+        const spell = ENHANCE_SPELLS.find(s => s.id === d.spellId);
+        showFeedback('解锁强化法术：' + spell.name + '！', ELEMENTS[spell.elem].color);
+        addParticles(d.x, d.y, ELEMENTS[spell.elem].color, 25, 5, 40);
+        addFloatText(d.x, d.y - 20, '解锁！', '#ffeb3b');
+      }
+      G.enhanceDrops.splice(i, 1);
+    }
+  }
+}
+
 // ======================== 渲染 ========================
 function render() {
   const sx = G.shake > 0.5 ? (Math.random()-0.5)*G.shake : 0;
@@ -1654,6 +1924,7 @@ function render() {
 
   drawCrystals();
   drawHealPacks();
+  drawEnhanceDrops();
   drawEvacPoint();
   drawHealZones();
   drawWalls();
@@ -1694,16 +1965,44 @@ function drawPlayer() {
     ctx.lineWidth = 3;
     ctx.beginPath(); ctx.arc(p.x, p.y, p.r+8, 0, TAU); ctx.stroke();
   }
+  // Buff auras
+  for (const elem of ELEM_KEYS) {
+    const b = G.buffs[elem];
+    if (!b || b.timer <= 0) continue;
+    const col = ELEMENTS[elem].color;
+    for (let s = 0; s < b.stacks; s++) {
+      ctx.strokeStyle = col + '55';
+      ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(p.x, p.y, p.r + 6 + s * 4, 0, TAU); ctx.stroke();
+    }
+  }
+  // Cast effect (0.5s = 30 frames)
+  if (G.castFx) {
+    const col = ELEMENTS[G.castFx.elem].color;
+    const t = G.castFx.timer / 30;
+    ctx.strokeStyle = col;
+    ctx.globalAlpha = t;
+    ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.arc(p.x, p.y, p.r + 30 * (1 - t), 0, TAU); ctx.stroke();
+    ctx.globalAlpha = t * 0.5;
+    ctx.beginPath(); ctx.arc(p.x, p.y, p.r + 20 * (1 - t), 0, TAU); ctx.stroke();
+    ctx.globalAlpha = 1;
+  }
   // Body
   ctx.fillStyle = p.hitFlash > 0 ? '#fff' : '#42a5f5';
   ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, TAU); ctx.fill();
   ctx.strokeStyle = '#90caf9'; ctx.lineWidth = 2; ctx.stroke();
-  // Direction
-  ctx.strokeStyle = '#fff'; ctx.lineWidth = 3;
+  // Direction triangle (钝角三角形, 高度12*0.8=9.6, 底半宽12)
+  ctx.fillStyle = '#fff';
+  const triTip = p.r + 5, triBase = p.r - 2, triHalfW = 8;
+  const perpAng = p.facing + Math.PI/2;
   ctx.beginPath();
-  ctx.moveTo(p.x, p.y);
-  ctx.lineTo(p.x+Math.cos(p.facing)*p.r*1.4, p.y+Math.sin(p.facing)*p.r*1.4);
-  ctx.stroke();
+  ctx.moveTo(p.x + Math.cos(p.facing)*triTip, p.y + Math.sin(p.facing)*triTip);
+  ctx.lineTo(p.x + Math.cos(p.facing)*triBase + Math.cos(perpAng)*triHalfW,
+             p.y + Math.sin(p.facing)*triBase + Math.sin(perpAng)*triHalfW);
+  ctx.lineTo(p.x + Math.cos(p.facing)*triBase - Math.cos(perpAng)*triHalfW,
+             p.y + Math.sin(p.facing)*triBase - Math.sin(perpAng)*triHalfW);
+  ctx.closePath(); ctx.fill();
   // Selected element indicator
   ctx.fillStyle = ELEMENTS[G.selectedMat].color;
   ctx.beginPath(); ctx.arc(p.x, p.y-p.r-6, 4, 0, TAU); ctx.fill();
@@ -1716,7 +2015,7 @@ function drawEnemies() {
     let color = elemColor;
     if (e.hitFlash > 0) color = '#fff';
     else if (e.freezeT > 0) color = '#81d4fa';
-    else if (e.slowT > 0) color = lerpColor(elemColor, '#42a5f5', 0.4);
+    else if ((e.slowStacks||0) > 0) color = lerpColor(elemColor, '#42a5f5', Math.min(1.0, 0.2 * e.slowStacks));
     ctx.fillStyle = color;
     ctx.shadowColor = elemColor; ctx.shadowBlur = 8;
     ctx.beginPath(); ctx.arc(e.x, e.y, e.r, 0, TAU); ctx.fill();
@@ -1928,13 +2227,20 @@ function drawTreeSpirits() {
 
 function drawLineEffects() {
   for (const le of G.lineEffects) {
-    const a = le.life / 20;
+    const a = Math.min(1, le.life / 20);
     ctx.globalAlpha = a;
     ctx.strokeStyle = le.color; ctx.lineWidth = 5;
     ctx.lineCap = 'round'; ctx.lineJoin = 'round';
     ctx.shadowColor = le.color; ctx.shadowBlur = 15;
     if (le.type === 'zigzag') {
-      ctx.lineWidth = le.width || 5;
+      // 闪电效果：外层光晕 + 内层白芯
+      ctx.shadowColor = le.color; ctx.shadowBlur = 20;
+      ctx.strokeStyle = le.color; ctx.lineWidth = le.width || 8;
+      ctx.beginPath();
+      ctx.moveTo(le.segs[0].x1, le.segs[0].y1);
+      for (const s of le.segs) ctx.lineTo(s.x2, s.y2);
+      ctx.stroke();
+      ctx.strokeStyle = '#fff'; ctx.lineWidth = (le.width||8)*0.4;
       ctx.beginPath();
       ctx.moveTo(le.segs[0].x1, le.segs[0].y1);
       for (const s of le.segs) ctx.lineTo(s.x2, s.y2);
@@ -1978,7 +2284,7 @@ function drawLineEffects() {
       if (a > 0.5) {
         ctx.fillStyle = '#fff'; ctx.globalAlpha = a;
         for (const s of le.segs) {
-          ctx.beginPath(); ctx.arc(s.x2, s.y2, 5*(1-a*0.5), 0, TAU); ctx.fill();
+          ctx.beginPath(); ctx.arc(s.x2, s.y2, Math.max(0, 5*(1-a*0.5)), 0, TAU); ctx.fill();
         }
         ctx.globalAlpha = a;
       }
@@ -2035,6 +2341,36 @@ function drawHealPacks() {
     ctx.fillStyle = '#66bb6a';
     ctx.fillRect(-h.r*0.7, -h.r*0.25, h.r*1.4, h.r*0.5);
     ctx.fillRect(-h.r*0.25, -h.r*0.7, h.r*0.5, h.r*1.4);
+    ctx.restore();
+  }
+}
+
+function drawEnhanceDrops() {
+  for (const d of G.enhanceDrops) {
+    const s = 1 + 0.2 * Math.sin(d.pulse);
+    const color = ELEMENTS[d.elem].color;
+    ctx.save();
+    ctx.translate(d.x, d.y);
+    ctx.rotate(d.pulse * 0.3);
+    // Hexagon shape
+    ctx.fillStyle = color;
+    ctx.shadowColor = color; ctx.shadowBlur = 15;
+    ctx.beginPath();
+    for (let i = 0; i < 6; i++) {
+      const a = i / 6 * TAU;
+      const r = d.r * s;
+      if (i === 0) ctx.moveTo(Math.cos(a) * r, Math.sin(a) * r);
+      else ctx.lineTo(Math.cos(a) * r, Math.sin(a) * r);
+    }
+    ctx.closePath(); ctx.fill();
+    ctx.shadowBlur = 0;
+    ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.stroke();
+    // Star icon inside
+    ctx.rotate(-d.pulse * 0.3);
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 14px sans-serif';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText('★', 0, 1);
     ctx.restore();
   }
 }
@@ -2176,6 +2512,17 @@ function updateHUD() {
   // Adventure info
   const profMax = Math.max(0, ...ELEM_KEYS.map(k => G.proficiency[k] || 0));
   document.getElementById('adv-info').innerHTML = '冒险等级 ' + G.adventureLevel + '<br>熟练度 ' + profMax + '/' + PROF_MAX;
+  // Buff display
+  const buffBox = document.getElementById('buff-info');
+  let chips = '';
+  for (const elem of ELEM_KEYS) {
+    const b = G.buffs[elem];
+    if (!b || b.timer <= 0) continue;
+    const sec = Math.ceil(b.timer / 60);
+    const col = ELEMENTS[elem].color;
+    chips += '<span class="buff-chip" style="background:' + col + '33;color:' + col + ';border:1px solid ' + col + '">' + ELEMENTS[elem].name + ' ×' + b.stacks + ' ' + sec + 's</span>';
+  }
+  buffBox.innerHTML = chips;
 }
 
 // ======================== 游戏流程 ========================
@@ -2191,6 +2538,7 @@ function startGame() {
   G.proficiency = {};
   ELEM_KEYS.forEach(k => G.proficiency[k] = 0);
   G.boss = null; G.evacPoint = null;
+  G.buffs = {}; G.spellCDs = {}; G.castFx = null; G.enhanceDrops = [];
   G.unsaved = false;
   G.gesturePts = []; G.isDrawing = false; G.joy.active = false;
   G.shake = 0; G.fbTimer = 0;
@@ -2262,6 +2610,9 @@ function saveGame() {
       boss: G.boss,
       evacPoint: G.evacPoint,
       time: G.time,
+      buffs: G.buffs,
+      spellCDs: G.spellCDs,
+      enhanceDrops: G.enhanceDrops,
     };
     localStorage.setItem(SAVE_KEY, JSON.stringify(data));
     G.unsaved = false;
@@ -2307,6 +2658,10 @@ function loadGame() {
     ELEM_KEYS.forEach(k => { if (G.proficiency[k] == null) G.proficiency[k] = 0; });
     G.boss = data.boss || null;
     G.evacPoint = data.evacPoint || null;
+    G.buffs = data.buffs || {};
+    G.spellCDs = data.spellCDs || {};
+    G.castFx = null;
+    G.enhanceDrops = data.enhanceDrops || [];
     G.unsaved = false;
     G.gesturePts = []; G.isDrawing = false; G.joy.active = false;
     G.shake = 0; G.fbTimer = 0; G.time = data.time || 0;
@@ -2381,6 +2736,7 @@ window.addEventListener('keydown', e => {
 
 // 初始检测存档
 loadAdventureLevel();
+loadEnhanceState();
 document.getElementById('adv-display').textContent = '当前冒险等级: ' + G.adventureLevel;
 document.getElementById('continue-btn').classList.toggle('hidden', !hasSave());
 
