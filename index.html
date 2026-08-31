@@ -63,8 +63,14 @@ button:hover{transform:scale(1.05)}
 
 /* ===== 移动端适配 ===== */
 @media (hover:none) and (pointer:coarse){
-  .overlay{padding:12px}
-  .overlay h1{font-size:30px;letter-spacing:2px}
+  .overlay{
+    padding:12px 12px 20px 12px;
+    padding-top:max(60px, env(safe-area-inset-top) + 20px);
+    overflow-y:auto;
+    -webkit-overflow-scrolling:touch;
+    max-height:100vh;
+  }
+  .overlay h1{font-size:30px;letter-spacing:2px;margin-top:0}
   .subtitle{font-size:13px;margin-bottom:12px}
   .panel{padding:10px 16px;margin:4px 0;max-width:92vw}
   .panel h3{font-size:14px}
@@ -105,8 +111,9 @@ button:hover{transform:scale(1.05)}
 
 <div id="landscape-hint" style="display:none;position:fixed;inset:0;z-index:9999;background:#0a0a14;flex-direction:column;align-items:center;justify-content:center;color:#fff;text-align:center;padding:20px">
   <div style="font-size:48px;margin-bottom:16px">📱↻</div>
-  <h2 style="font-size:22px;margin-bottom:8px">请横屏游玩</h2>
-  <p style="color:#888;font-size:14px">旋转设备至横屏以获得最佳体验</p>
+  <h2 style="font-size:22px;margin-bottom:8px">建议横屏游玩</h2>
+  <p style="color:#888;font-size:14px;margin-bottom:20px">旋转手机至横屏以获得最佳体验</p>
+  <button onclick="this.parentElement.style.display='none'" style="padding:10px 32px;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);border-radius:8px;color:#fff;font-size:15px;cursor:pointer">确认</button>
 </div>
 
 <div id="hud" class="hidden">
