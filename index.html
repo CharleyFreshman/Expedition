@@ -96,7 +96,7 @@ button:hover{transform:scale(1.05)}
   /* Boss血条适应 */
   #boss-hp-box{top:max(34px,calc(env(safe-area-inset-top) + 28px));width:80vw;max-width:300px}
   /* 暂停按钮加大 */
-  .ctrl-btn{width:40px;height:40px;font-size:16px}
+  .ctrl-btn{width:50px;height:50px;font-size:16px}
   #ctrl-btns{top:max(8px,env(safe-area-inset-top));right:max(8px,env(safe-area-inset-right))}
   /* 冒险信息隐藏避免遮挡 */
   #adv-info{font-size:10px;bottom:max(8px,env(safe-area-inset-bottom))}
@@ -105,14 +105,25 @@ button:hover{transform:scale(1.05)}
   .quit-confirm p{font-size:13px}
   /* 横屏专用缩放控制 */
 }
-@media (hover:none) and (pointer:coarse) and (orientation:landscape) and (max-height: 500px) {
-  .overlay { transform: scale(0.75); padding: 4px 16px; }
-  .overlay h1 { font-size: 20px; }
-  .panel { padding: 4px 10px; margin: 2px 0; }
-  .panel h3 { font-size: 10px; }
-  .panel p { font-size: 10px; }
-  .gi svg { width: 20px; height: 20px; }
-  button { padding: 8px 20px; font-size: 12px; }
+/* 横屏专用缩放控制 - 强制缩小 */
+@media (hover:none) and (pointer:coarse) and (orientation:landscape) {
+  .overlay {
+    transform: scale(0.5);
+    transform-origin: top center;
+    width: 200%;
+    margin-left: -50%;
+    padding: 20px 30px;
+    overflow-y: auto;
+    max-height: 100vh;
+  }
+  .overlay h1 { font-size: 28px; margin-top: 0; }
+  .subtitle { font-size: 14px; margin-bottom: 8px; }
+  .panel { padding: 8px 16px; margin: 4px 0; }
+  .panel h3 { font-size: 13px; }
+  .panel p { font-size: 12px; line-height: 1.5; }
+  button { padding: 12px 32px; font-size: 15px; margin-top: 8px; }
+  .gi svg { width: 28px; height: 28px; }
+  .gi { font-size: 10px; }
 }
 
 </style>
@@ -1197,18 +1208,31 @@ canvas.addEventListener('mouseleave', () => {
 });
 
 // Touch — 左半屏摇杆 / 右半屏画手势
-canvas.addEventListener('touchstart', e => {
+canvas.addEventListener('touchmove', e => {
   e.preventDefault();
   if (G.state !== 'PLAYING' || G.paused) return;
   for (const t of e.changedTouches) {
-    if (t.clientX < W/2 && !G.joy.active) {
-      G.joy.active = true; G.joy.id = t.identifier;
-      G.joy.cx = t.clientX; G.joy.cy = t.clientY;
-      G.joy.dx = 0; G.joy.dy = 0;
-    } else if (t.clientX >= W/2 && !G.isDrawing) {
-      G.isDrawing = true; G.drawId++;
-      G.drawTouchId = t.identifier;
-      G.gesturePts = [{x:t.clientX, y:t.clientY}];
+    if (t.identifier === G.joy.id && G.joy.active) {
+      const dx = t.clientX - G.joy.cx;
+      const dy = t.clientY - G.joy.cy;
+      const dist = Math.sqrt(dx*dx + dy*dy);      
+      // 死区阈值：小于15px视为无操作
+      const DEAD_ZONE = 15;
+      if (dist < DEAD_ZONE) {
+        G.joy.dx = 0;
+        G.joy.dy = 0;
+      } else {
+        const maxDist = Math.min(dist, 60); // 最大摇杆偏移60px
+        const ratio = (dist - DEAD_ZONE) / (maxDist - DEAD_ZONE);
+        const angle = Math.atan2(dy, dx);
+        G.joy.dx = Math.cos(angle) * Math.min(ratio, 1);
+        G.joy.dy = Math.sin(angle) * Math.min(ratio, 1);
+        G.joy.cx = t.clientX;
+        G.joy.cy = t.clientY;
+      }
+    }
+    else if (t.identifier === G.drawTouchId && G.isDrawing) {
+      G.gesturePts.push({x:t.clientX, y:t.clientY});
     }
   }
 }, {passive:false});
