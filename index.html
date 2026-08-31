@@ -68,6 +68,7 @@ button:hover{transform:scale(1.05)}
     padding-top:max(60px, env(safe-area-inset-top) + 20px);
     overflow-y:auto;
     -webkit-overflow-scrolling:touch;
+    touch-action:pan-y;
     max-height:100vh;
   }
   .overlay h1{font-size:30px;letter-spacing:2px;margin-top:0}
@@ -107,7 +108,7 @@ button:hover{transform:scale(1.05)}
 /* 横屏专用缩放控制 - 强制缩小 */
 @media (hover:none) and (pointer:coarse) and (orientation:landscape) {
   .overlay {
-    transform: scale(0.25);
+    transform: scale(0.4);
     transform-origin: top center;
     width: 200%;
     margin-left: -50%;
@@ -138,7 +139,7 @@ button:hover{transform:scale(1.05)}
   <div id="mat-bar"></div>
   <div id="boss-hp-box" class="hidden"><div id="boss-hp-bar"></div><span id="boss-hp-text"></span></div>
   <div id="spell-fb"></div>
-  <div id="hint">选择材料后在屏幕上画手势施法</div>
+  <div id="hint">选择材料后画出魔法轨迹</div>
   <div id="adv-info"></div>
   <div id="buff-info"></div>
   <div id="ctrl-btns">
@@ -2795,13 +2796,7 @@ if (IS_MOBILE) {
   canvas.style.cursor = 'default';
 }
 
-// 阻止移动端双击缩放和长按菜单
-let lastTouchTime = 0;
-document.addEventListener('touchend', e => {
-  const now = Date.now();
-  if (now - lastTouchTime <= 300) e.preventDefault();
-  lastTouchTime = now;
-}, {passive:false});
+// 移动端缩放已由 meta viewport 禁用，无需劫持 touchend（避免吞掉按钮 click）
 document.addEventListener('contextmenu', e => { if (IS_MOBILE) e.preventDefault(); });
 
 requestAnimationFrame(loop);
