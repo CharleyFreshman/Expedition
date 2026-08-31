@@ -96,23 +96,22 @@ button:hover{transform:scale(1.05)}
   /* Boss血条适应 */
   #boss-hp-box{top:max(34px,calc(env(safe-area-inset-top) + 28px));width:80vw;max-width:300px}
   /* 暂停按钮加大 */
-  .ctrl-btn{width:50px;height:50px;font-size:16px}
+  .ctrl-btn{width:50px;height:50px;font-size:18px}
   #ctrl-btns{top:max(8px,env(safe-area-inset-top));right:max(8px,env(safe-area-inset-right))}
   /* 冒险信息隐藏避免遮挡 */
   #adv-info{font-size:10px;bottom:max(8px,env(safe-area-inset-bottom))}
   .stats{font-size:14px}
   .stats span{font-size:16px}
   .quit-confirm p{font-size:13px}
-  /* 横屏专用缩放控制 */
 }
 /* 横屏专用缩放控制 - 强制缩小 */
 @media (hover:none) and (pointer:coarse) and (orientation:landscape) {
   .overlay {
-    transform: scale(0.5);
+    transform: scale(0.4);
     transform-origin: top center;
     width: 200%;
     margin-left: -50%;
-    padding: 20px 30px;
+    padding: 20px 30px 30px 30px;
     overflow-y: auto;
     max-height: 100vh;
   }
