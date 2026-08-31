@@ -107,7 +107,7 @@ button:hover{transform:scale(1.05)}
 /* 横屏专用缩放控制 - 强制缩小 */
 @media (hover:none) and (pointer:coarse) and (orientation:landscape) {
   .overlay {
-    transform: scale(0.3);
+    transform: scale(0.25);
     transform-origin: top center;
     width: 200%;
     margin-left: -50%;
@@ -130,13 +130,12 @@ button:hover{transform:scale(1.05)}
 <body>
 <canvas id="canvas"></canvas>
 
-<div id="hud" class="hidden">
-  <div id="landscape-hint" style="display:none;position:fixed;inset:0;z-index:9999;background:#0a0a14;flex-direction:column;align-items:center;justify-content:center;color:#fff;text-align:center;padding:20px">
-    <div style="font-size:48px;margin-bottom:16px">📱↻</div>
-    <h2 style="font-size:22px;margin-bottom:8px">建议横屏游玩</h2>
-    <p style="color:#888;font-size:14px;margin-bottom:20px">旋转手机至横屏以获得最佳体验</p>
-    <button onclick="document.getElementById('landscape-hint').style.display='none'" style="padding:18px 60px;background:linear-gradient(135deg,#4fc3f7,#0288d1);border:none;border-radius:14px;color:#fff;font-size:20px;font-weight:600;cursor:pointer;box-shadow:0 4px 20px rgba(79,195,247,0.4);min-width:200px;touch-action:manipulation">确认</button>  
-  </div>
+<div id="landscape-hint" style="display:none;position:fixed;inset:0;z-index:99999;background:#0a0a14;flex-direction:column;align-items:center;justify-content:center;color:#fff;text-align:center;padding:20px;pointer-events:auto !important;">
+  <div style="font-size:48px;margin-bottom:16px">📱↻</div>
+  <h2 style="font-size:22px;margin-bottom:8px">建议横屏游玩</h2>
+  <p style="color:#888;font-size:14px;margin-bottom:20px">旋转手机至横屏以获得最佳体验</p>
+  <button onclick="document.getElementById('landscape-hint').style.display='none'" style="padding:18px 60px;background:linear-gradient(135deg,#4fc3f7,#0288d1);border:none;border-radius:14px;color:#fff;font-size:20px;font-weight:600;cursor:pointer;box-shadow:0 4px 20px rgba(79,195,247,0.4);min-width:200px;touch-action:manipulation;pointer-events:auto !important;">确认</button>
+</div>
   <div id="top-bar">
     <div id="hp-box"><div id="hp-bar"></div><span id="hp-text">100/100</span></div>
     <div class="tag" id="wave-tag">第1波</div>
