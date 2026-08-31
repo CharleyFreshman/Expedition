@@ -105,38 +105,14 @@ button:hover{transform:scale(1.05)}
   .quit-confirm p{font-size:13px}
   /* 横屏专用缩放控制 */
 }
-@media (hover:none) and (pointer:coarse) and (orientation:landscape) {
-  .overlay {
-    padding: 8px 20px 12px 20px;
-    padding-top: max(12px, env(safe-area-inset-top) + 8px);
-    transform: scale(0.85);
-    transform-origin: top center;
-    width: 100%;
-    max-height: 100vh;
-    overflow-y: auto;
-  }
-  .overlay h1 { font-size: 24px; margin-top: 0; }
-  .subtitle { font-size: 11px; margin-bottom: 6px; }
-  .panel { 
-    padding: 6px 12px; 
-    margin: 3px 0; 
-    max-width: 100%;
-  }
-  .panel h3 { font-size: 12px; margin: 4px 0; }
-  .panel p { font-size: 11px; line-height: 1.4; margin: 2px 0; }
-  .gi svg { width: 24px; height: 24px; }
-  .gi { font-size: 9px; gap: 4px; }
-  .gesture-icons { gap: 6px; flex-wrap: wrap; }
-  button { 
-    padding: 10px 28px; 
-    font-size: 14px; 
-    margin-top: 6px; 
-  }
-  .btn-sec, .btn-green, .btn-yellow, .btn-red { 
-    padding: 8px 16px; 
-    font-size: 12px; 
-  }
-  .adv-display { font-size: 12px; }
+@media (hover:none) and (pointer:coarse) and (orientation:landscape) and (max-height: 500px) {
+  .overlay { transform: scale(0.75); padding: 4px 16px; }
+  .overlay h1 { font-size: 20px; }
+  .panel { padding: 4px 10px; margin: 2px 0; }
+  .panel h3 { font-size: 10px; }
+  .panel p { font-size: 10px; }
+  .gi svg { width: 20px; height: 20px; }
+  button { padding: 8px 20px; font-size: 12px; }
 }
 
 </style>
