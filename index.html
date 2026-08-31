@@ -107,7 +107,7 @@ button:hover{transform:scale(1.05)}
 /* 横屏专用缩放控制 - 强制缩小 */
 @media (hover:none) and (pointer:coarse) and (orientation:landscape) {
   .overlay {
-    transform: scale(0.4);
+    transform: scale(0.3);
     transform-origin: top center;
     width: 200%;
     margin-left: -50%;
@@ -1229,7 +1229,7 @@ canvas.addEventListener('touchmove', e => {
       let dx = t.clientX - G.joy.cx;
       let dy = t.clientY - G.joy.cy;
       // 死区：移动小于10px视为无效
-      const deadZone = 10;
+      const deadZone = 5;
       if (Math.abs(dx) < deadZone && Math.abs(dy) < deadZone) {
         G.joy.dx = 0; G.joy.dy = 0;
       } else {
