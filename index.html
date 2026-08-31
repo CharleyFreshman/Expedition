@@ -540,7 +540,7 @@ function recognizeGesture(rawPts) {
 const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
 let W=0, H=0;
-const IS_MOBILE = (matchMedia('(hover:none) and (pointer:coarse)').matches) || ('ontouchstart' in window && window.innerWidth < 1024);
+const IS_MOBILE = (matchMedia('(hover:none) and (pointer:coarse)').matches) || (navigator.maxTouchPoints > 0 && window.innerWidth < 1024) || ('ontouchstart' in window && window.innerWidth < 1024);
 
 const G = {
   state: 'START',
@@ -597,18 +597,6 @@ function resize() {
 window.addEventListener('resize', resize);
 window.addEventListener('orientationchange', () => setTimeout(resize, 100));
 resize();
-
-if (IS_MOBILE) {
-  // 横屏检测
-  function checkLandscape() {
-    const hint = document.getElementById('landscape-hint');
-    const isPortrait = window.innerHeight > window.innerWidth;
-    hint.style.display = isPortrait ? 'flex' : 'none';
-  }
-  window.addEventListener('resize', checkLandscape);
-  window.addEventListener('orientationchange', () => setTimeout(checkLandscape, 100));
-  checkLandscape();
-}
 
 // ======================== 实体创建 ========================
 function createPlayer() {
