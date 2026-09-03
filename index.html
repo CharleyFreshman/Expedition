@@ -141,7 +141,6 @@ button:hover{transform:scale(1.05)}
   <div id="mat-bar"></div>
   <div id="boss-hp-box" class="hidden"><div id="boss-hp-bar"></div><span id="boss-hp-text"></span></div>
   <div id="spell-fb"></div>
-  <div id="hint">选择材料后画出魔法轨迹</div>
   <div id="adv-info"></div>
   <div id="ctrl-btns">
     <button class="ctrl-btn" id="pause-btn" title="暂停 (P/Esc)">❚❚</button>
@@ -1291,13 +1290,13 @@ function updatePlayer() {
   if (dx !== 0 || dy !== 0) {
     const len = Math.hypot(dx, dy);
     if (len > 1) { dx/=len; dy/=len; }
-    let spd = 3.5;
-    if (G.isDrawing) spd *= 0.8;
-    p.vx = lerp(p.vx, dx*spd, 0.3);
-    p.vy = lerp(p.vy, dy*spd, 0.3);
+    let spd = 3;
+    if (G.isDrawing) spd -= 0.5;
+    p.vx = lerp(p.vx, dx*spd, 0.2);
+    p.vy = lerp(p.vy, dy*spd, 0.2);
     p.facing = Math.atan2(dy, dx);
   } else {
-    p.vx *= 0.85; p.vy *= 0.85;
+    p.vx *= 0.9; p.vy *= 0.9;
   }
   p.x = clamp(p.x + p.vx, p.r, W-p.r);
   p.y = clamp(p.y + p.vy, p.r, H-p.r);
