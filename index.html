@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no,viewport-fit=cover">
-<title>魔法远征 - 战斗原型Demo</title>
+<title>魔法远征 · V1.1 Flash</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 body{background:#0a0a14;overflow:hidden;font-family:'Microsoft YaHei',sans-serif;color:#fff;touch-action:none}
@@ -36,7 +36,7 @@ button:hover{transform:scale(1.05)}
 .mslot .key{position:absolute;top:-2px;right:-2px;font-size:9px;background:#333;border-radius:3px;padding:0 3px;color:#999}
 #spell-fb{position:absolute;top:35%;left:50%;transform:translate(-50%,-50%);font-size:28px;font-weight:bold;text-shadow:0 0 10px currentColor;opacity:0;transition:opacity .3s;pointer-events:none;text-align:center;white-space:nowrap}
 #hint{position:absolute;bottom:68px;left:50%;transform:translateX(-50%);color:#666;font-size:12px}
-#buff-info{position:absolute;top:10px;left:50%;transform:translateX(-50%);display:flex;gap:6px;pointer-events:none}
+#buff-info{display:flex;gap:6px;align-items:center;pointer-events:none;max-width:42vw;overflow:hidden}
 .buff-chip{padding:2px 8px;border-radius:10px;font-size:12px;font-weight:bold;white-space:nowrap;animation:buffPulse 1s ease-in-out infinite alternate}
 @keyframes buffPulse{from{opacity:0.7}to{opacity:1}}
 .stats{color:#aaa;font-size:16px;line-height:2;text-align:center}
@@ -133,6 +133,7 @@ button:hover{transform:scale(1.05)}
 <canvas id="canvas"></canvas>
 <div id="hud" class="hidden">
   <div id="top-bar">
+    <div id="buff-info"></div>
     <div id="hp-box"><div id="hp-bar"></div><span id="hp-text">100/100</span></div>
     <div class="tag" id="wave-tag">第1波</div>
     <div class="tag" id="score-tag">分数 0</div>
@@ -142,7 +143,6 @@ button:hover{transform:scale(1.05)}
   <div id="spell-fb"></div>
   <div id="hint">选择材料后画出魔法轨迹</div>
   <div id="adv-info"></div>
-  <div id="buff-info"></div>
   <div id="ctrl-btns">
     <button class="ctrl-btn" id="pause-btn" title="暂停 (P/Esc)">❚❚</button>
   </div>
@@ -233,7 +233,7 @@ button:hover{transform:scale(1.05)}
     <h3>2星法术（圆形·范围）</h3>
     <p>
       <b style="color:#ff6b35">火</b> 扇形 大范围伤害<br>
-      <b style="color:#6ff863">木</b> 召唤树灵 嘲讽输出<br>
+      <b style="color:#6ff863">木</b> 召唤木灵 嘲讽输出<br>
       <b style="color:#fdd835">土</b> 城墙防御 弹反怪物<br>
       <b style="color:#dd4bf7">雷</b> 追踪目标 连锁反应<br>
       <b style="color:#ffffff">冰</b> 冰冻敌人 造成伤害<br>
@@ -244,7 +244,7 @@ button:hover{transform:scale(1.05)}
     <h3>3星法术（折线·增益）</h3>
     <p>
       <b style="color:#ff6b35">火</b> 增伤 扩大范围<br>
-      <b style="color:#6ff863">木</b> 增伤 治愈树灵<br>
+      <b style="color:#6ff863">木</b> 增伤 治愈木灵<br>
       <b style="color:#fdd835">土</b> 增伤 加固城墙<br>
       <b style="color:#dd4bf7">雷</b> 增伤 增加连击<br>
       <b style="color:#ffffff">冰</b> 增伤 强化减速<br>
@@ -290,16 +290,16 @@ const ELEM_KEYS = ['fire','wood','earth','thunder','ice','water'];
 const SPELLS = [
   // === LINE (1星) 单体法术 ===
   { id:'fire_line',    name:'火球术',     elem:'fire',    gesture:'LINE', cost:1, type:'projectile', dmg:2, range:3*UNIT, r:10, splash:true },
-  { id:'wood_line',    name:'藤蔓缠绕',   elem:'wood',    gesture:'LINE', cost:1, type:'instant', dmg:1, range:3*UNIT, fx:'bind' },
-  { id:'earth_line',   name:'碎石弹',   elem:'earth',   gesture:'LINE', cost:1, type:'projectile', dmg:2, trackRange:4*UNIT, r:8 },
-  { id:'thunder_line', name:'晴空霹雳',     elem:'thunder', gesture:'LINE', cost:1, type:'zigzag',      dmg:2, len:3*UNIT },
+  { id:'wood_line',    name:'藤蔓缠绕',   elem:'wood',    gesture:'LINE', cost:1, type:'instant', dmg:1, range:3*UNIT,rootT:4*60, fx:'bind' },
+  { id:'earth_line',   name:'碎石弹',   elem:'earth',   gesture:'LINE', cost:1, type:'projectile', dmg:2, range:3*UNIT, r:8, split:true },
+  { id:'thunder_line', name:'晴天霹雳',     elem:'thunder', gesture:'LINE', cost:1, type:'zigzag',      dmg:2, len:3*UNIT },
   { id:'ice_line',     name:'冰锥术',     elem:'ice',     gesture:'LINE', cost:1, type:'projectile', dmg:2, range:3*UNIT, r:8, slow:true },
-  { id:'water_line',   name:'龙王一喷',     elem:'water',   gesture:'LINE', cost:1, type:'line',        dmg:3, len:2*UNIT },
+  { id:'water_line',   name:'龙王一喷',     elem:'water',   gesture:'LINE', cost:1, type:'line',        dmg:2, len:2*UNIT },
   // === CIRCLE (2星) 范围法术 ===
-  { id:'fire_circle',  name:'烈焰扇',   elem:'fire',    gesture:'CIRCLE', cost:2, type:'fan',      dmg:4, radius:3*UNIT, angle:Math.PI*2/3 },
-  { id:'wood_circle',  name:'树灵召唤', elem:'wood',    gesture:'CIRCLE', cost:2, type:'summon',   spiritHp:20, dur:9999 },
+  { id:'fire_circle',  name:'朱雀扇',   elem:'fire',    gesture:'CIRCLE', cost:2, type:'fan',      dmg:4, radius:3*UNIT, angle:Math.PI*2/3 },
+  { id:'wood_circle',  name:'木灵召唤', elem:'wood',    gesture:'CIRCLE', cost:2, type:'summon',   spiritHp:20, dur:9999 },
   { id:'earth_circle', name:'守护之墙',     elem:'earth',   gesture:'CIRCLE', cost:2, type:'wall',     size:2*UNIT, dur:60*60, wallHp:50 },
-  { id:'thunder_circle',name:'雷の呼吸·壹之型', elem:'thunder', gesture:'CIRCLE', cost:2, type:'chain',    dmg:3, range:3*UNIT, maxJumps:8 },
+  { id:'thunder_circle',name:'雷の呼吸·壹之型', elem:'thunder', gesture:'CIRCLE', cost:2, type:'chain',    dmg:3, range:3*UNIT, maxJumps:6 },
   { id:'ice_circle',   name:'千里冰封',     elem:'ice',     gesture:'CIRCLE', cost:2, type:'freeze',   radius:2*UNIT, dmg:3, freezeMon:6*60, freezeBoss:3*60 },
   { id:'water_circle', name:'春风化雨', elem:'water',   gesture:'CIRCLE', cost:2, type:'healzone', radius:2*UNIT, healRate:10, dur:5*60 },
 ];
@@ -308,8 +308,8 @@ SPELLS.forEach(s => { SPELL_MAP[s.elem + '|' + s.gesture] = s; });
 
 // === 3星(CHEVRON) 强化法术 === 消耗3材料, 10s持续, 5s冷却, 可叠加
 const ENHANCE_SPELLS = [
-  { id:'fire_chevron',    name:'怒火中烧', elem:'fire',    gesture:'CHEVRON', cost:3, dur:600, cd:300, desc:'火伤+50% 弹径+25%' },
-  { id:'wood_chevron',    name:'万物生',   elem:'wood',    gesture:'CHEVRON', cost:3, dur:600, cd:300, desc:'木伤+50% 树灵全愈' },
+  { id:'fire_chevron',    name:'炉火纯青', elem:'fire',    gesture:'CHEVRON', cost:3, dur:600, cd:300, desc:'火伤+50% 弹径+25%' },
+  { id:'wood_chevron',    name:'万物生',   elem:'wood',    gesture:'CHEVRON', cost:3, dur:600, cd:300, desc:'木伤+50% 木灵全愈' },
   { id:'earth_chevron',   name:'不动如山', elem:'earth',   gesture:'CHEVRON', cost:3, dur:600, cd:300, desc:'土伤+50% 城墙血+50%' },
   { id:'thunder_chevron', name:'雷霆万钧', elem:'thunder', gesture:'CHEVRON', cost:3, dur:600, cd:300, desc:'雷伤+50% 跳数+25%' },
   { id:'ice_chevron',     name:'寒霜降',   elem:'ice',     gesture:'CHEVRON', cost:3, dur:600, cd:300, desc:'冰伤+50% 减速+50%' },
@@ -319,12 +319,12 @@ const ENHANCE_MAP = {};
 ENHANCE_SPELLS.forEach(s => { ENHANCE_MAP[s.elem + '|' + s.gesture] = s; });
 
 const ENEMY_TYPES = {
-  slime:   { name:'水史莱姆', elem:'water',   hp:3, spd:1.0, dmg:4, r:13, drop:'water',   ai:'chase'  },
+  slime:   { name:'史莱姆', elem:'water',   hp:3, spd:1.0, dmg:4, r:13, drop:'water',   ai:'chase'  },
   wolf:    { name:'土野狼',   elem:'earth',   hp:3, spd:1.5, dmg:3, r:14, drop:'earth',   ai:'charge' },
   bat:     { name:'雷蝙蝠',   elem:'thunder', hp:3, spd:2.0, dmg:2, r:12, drop:'thunder', ai:'swarm'  },
-  spirit:  { name:'木精',     elem:'wood',    hp:6, spd:.75,  dmg:4, r:20, drop:'wood',    ai:'ranged', atkRange:200, atkCD:120, elite:true },
-  firebug: { name:'熔岩虫',   elem:'fire',    hp:4, spd:1.0, dmg:3, r:15, drop:'fire',    ai:'chase'  },
-  iceshard:{ name:'雪怪',    elem:'ice',     hp:3, spd:1.2, dmg:4, r:16, drop:'ice',     ai:'swarm'  },
+  spirit:  { name:'树精',     elem:'wood',    hp:6, spd:.75,  dmg:4, r:20, drop:'wood',    ai:'ranged', atkRange:200, atkCD:120, elite:true },
+  firebug: { name:'熔岩虫',   elem:'fire',    hp:3, spd:1.0, dmg:4, r:15, drop:'fire',    ai:'swarm'  },
+  iceshard:{ name:'雪怪',    elem:'ice',     hp:4, spd:1.2, dmg:3, r:16, drop:'ice',     ai:'charge'  },
 };
 
 const COUNTERS = {
@@ -362,11 +362,11 @@ const BOSS_TYPES = {
   },
 };
 
-const PROF_MAX = 100;
-const PROF_PER_CAST = 1;       // 每次施法造成伤害或回血+1
-const PROF_BONUS_PER_50 = 0.10; // 每50点熟练度+10%伤害
-const ICE_SLOW = 0.2;           // 冰锥减速参数（可被增益调整）
-const SLOW_DECAY = 180;        // 每3s(180帧)衰减1层
+const PROF_MAX = 999;
+const PROF_PER_CAST = 1;
+const PROF_BONUS_PER_50 = 0.0; // 每50点熟练度+10%伤害
+const ICE_SLOW = 0.3;           // 冰锥减速参数（可被增益调整）
+const SLOW_DECAY = 120;        // 每3s(180帧)衰减1层
 
 // ======================== 工具函数 ========================
 const TAU = Math.PI * 2;
@@ -740,8 +740,8 @@ function castSpell(spell) {
         damageEnemy(target, spell.dmg, spell.elem);
       }
       if (spell.fx === 'bind') {
-        target.rootT = 5*60;
-        addFloatText(target.x, target.y-target.r-5, '束缚', '#66bb6a');
+        target.rootT = spell.rootT;
+        addFloatText(target.x, target.y-target.r-20, '束缚', '#66bb6a');
       }
       addParticles(target.x, target.y, ELEMENTS[spell.elem].color, 10, 3, 20);
       addProf(spell.elem);
@@ -750,11 +750,11 @@ function castSpell(spell) {
       G.materials[spell.elem] += spell.cost;
     }
   } else if (spell.type === 'projectile') {
-    // Earth: track nearest enemy within trackRange, then fly straight (dodgeable)
-    const trackRange = spell.trackRange || spell.range;
+    // 碎石/火球/冰锥: track nearest enemy within range, then fly straight (dodgeable)
+    const range = spell.range;
     let target = null;
-    if (trackRange) {
-      let md = trackRange;
+    if (range) {
+      let md = range;
       for (const e of G.enemies) {
         const d = Math.hypot(e.x-p.x, e.y-p.y);
         if (d < md) { md=d; target=e; }
@@ -771,17 +771,17 @@ function castSpell(spell) {
       dmg:spell.dmg, elem:spell.elem, r: spell.elem === 'fire' ? spell.r * getBuffFireRadiusMult() : spell.r,
       life: isEarth ? 300 : 100,
       range: isEarth ? null : spell.range, traveled:0, fx:spell.fx||null,
-      hitSet:new Set(), canSplit: isEarth, splitDir: ang,
+      hitSet:new Set(), split: spell.split || false, splitDir: ang,
       slow: spell.slow || false, splash: spell.splash || false,
     });
   } else if (spell.type === 'line') {
-    // 水：2单位长度线段，伤害3，一次性伤害，1s视觉效果
+    // 水柱：2单位长度线段，伤害3，一次性伤害，1s视觉效果
     const target = findNearestEnemy(p.x, p.y);
     const ang = target ? Math.atan2(target.y-p.y, target.x-p.x) : p.facing;
     const ex = p.x + Math.cos(ang)*spell.len, ey = p.y + Math.sin(ang)*spell.len;
-    G.lineEffects.push({type:'water', x1:p.x, y1:p.y, x2:ex, y2:ey, elem:spell.elem, life:60, color:ELEMENTS[spell.elem].color, width:15});
+    G.lineEffects.push({type:'water', x1:p.x, y1:p.y, x2:ex, y2:ey, elem:spell.elem, life:60, color:ELEMENTS[spell.elem].color, width:20});
     let hitAny = false;
-    const hitRange = 12;
+    const hitRange = 18;
     for (const e of G.enemies) {
       if (pointToLineDist(e.x, e.y, p.x, p.y, ex, ey) < e.r + hitRange) {
         damageEnemy(e, spell.dmg, spell.elem); hitAny = true;
@@ -792,7 +792,7 @@ function castSpell(spell) {
     }
     if (hitAny) addProf(spell.elem);
   } else if (spell.type === 'zigzag') {
-    // 雷：闪电⚡，两折(3段)，最宽0.6单位，长3单位
+    // 雷线：闪电⚡，两折(3段)，最宽0.6单位，长3单位
     const totalLen = spell.len;
     const maxOffset = 0.3 * UNIT; // 0.3单位，最宽0.6单位
     let target = null, md = totalLen;
@@ -806,7 +806,6 @@ function castSpell(spell) {
     }
     const ang = target ? Math.atan2(target.y-p.y, target.x-p.x) : p.facing;
     const perp = ang + Math.PI/2;
-    // 3段2折的闪电形状：偏移 +max, -max, 0（回到主轴）
     const segs = [];
     let prevX = p.x, prevY = p.y;
     const offsets = [maxOffset, -maxOffset, 0];
@@ -820,7 +819,7 @@ function castSpell(spell) {
     G.lineEffects.push({type:'zigzag', segs, elem:spell.elem, life:30, color:ELEMENTS[spell.elem].color, width:10});
     let hitAny = false;
     const hitSet = new Set();
-    const hitRange = 8; 
+    const hitRange = 12; 
     for (const seg of segs) {
       for (const e of G.enemies) {
         if (hitSet.has(e)) continue;
@@ -832,16 +831,10 @@ function castSpell(spell) {
         hitSet.add(G.boss); damageBoss(spell.dmg, spell.elem); hitAny = true;
       }
     }
-    // 保证必定经过目标敌人（改为与水线段相同的折线判定）
-    // if (target && !hitSet.has(target)) {
-    //   if (target === G.boss) damageBoss(spell.dmg, spell.elem);
-    //   else damageEnemy(target, spell.dmg, spell.elem);
-    //   hitSet.add(target); hitAny = true;
-    // }
     if (hitAny) addProf(spell.elem);
   } else if (spell.type === 'fan') {
-    // 火：正前方90度扇形，半径3单位，伤害4
-    G.lineEffects.push({type:'fan', x:p.x, y:p.y, ang:p.facing, radius:spell.radius, angle:spell.angle, elem:spell.elem, life:20, color:ELEMENTS[spell.elem].color});
+    // 朱雀扇：正前方90度扇形，半径3单位，伤害4
+    G.lineEffects.push({type:'fan', x:p.x, y:p.y, ang:p.facing, radius:spell.radius, angle:spell.angle, elem:spell.elem, life:45, color:ELEMENTS[spell.elem].color});
     let hitAny = false;
     for (const e of G.enemies) {
       const d = dist(e, p);
@@ -889,14 +882,14 @@ function castSpell(spell) {
     }
     addProf(spell.elem);
   } else if (spell.type === 'summon') {
-    // 木：召唤树灵，血量20，嘲讽
+    // 木：召唤木灵，血量20，嘲讽
     G.treeSpirits.push({
       x: p.x + Math.cos(p.facing)*40, y: p.y + Math.sin(p.facing)*40,
       vx:0, vy:0, r:18, hp:spell.spiritHp, maxHp:spell.spiritHp, atkTimer:0, hitFlash:0, atkFx:0,
     });
     addParticles(p.x, p.y, '#66bb6a', 25, 4, 40);
   } else if (spell.type === 'chain') {
-    // 雷：连锁反应，先击中3单位内怪物A，后追击A 3单位内的B...直到重复或8次
+    // 雷链：连锁反应，先击中3单位内怪物A，后追击A 3单位内的B...直到重复或8次
     const targets = [];
     const hit = new Set();
     let from = {x:p.x, y:p.y};
@@ -926,8 +919,8 @@ function castSpell(spell) {
       addProf(spell.elem);
     }
   } else if (spell.type === 'freeze') {
-    // 冰：冻结半径2单位内小怪6s/Boss 3s，造成3伤害
-    G.lineEffects.push({type:'circle', x:p.x, y:p.y, r:spell.radius, elem:spell.elem, life:30, color:ELEMENTS[spell.elem].color});
+    // 冰：冰冻半径2单位内小怪6s/Boss 3s，造成3伤害
+    G.lineEffects.push({type:'circle', x:p.x, y:p.y, r:spell.radius, elem:spell.elem, life:60, color:ELEMENTS[spell.elem].color});
     let hitAny = false;
     for (const e of G.enemies) {
       if (dist(e, p) < spell.radius + e.r) {
@@ -938,6 +931,7 @@ function castSpell(spell) {
     }
     if (G.boss && dist(G.boss, p) < spell.radius + G.boss.r) {
       damageBoss(spell.dmg, spell.elem);
+      addFloatText(G.boss.x, G.boss.y-G.boss.r-20, '冰冻', '#81d4fa');
       G.boss.freezeT = Math.max(G.boss.freezeT || 0, spell.freezeBoss);
       hitAny = true;
     }
@@ -963,11 +957,11 @@ function castEnhanceSpell(spell) {
   G.shake = 4;
 }
 
-function healAllTreeSpirits() {
+function healAllTreeSpirits() {  //治愈所有木灵
   for (const s of G.treeSpirits) {
     s.hp = s.maxHp;
     addParticles(s.x, s.y, '#66bb6a', 15, 3, 30);
-    addFloatText(s.x, s.y - s.r - 5, '全恢复', '#66bb6a');
+    addFloatText(s.x, s.y - s.r - 5, '恢复', '#66bb6a');
   }
 }
 
@@ -1036,7 +1030,8 @@ function addProf(elem) {
 }
 
 function getProfMult(elem) {
-  return 1 + Math.floor((G.proficiency[elem] || 0) / 50) * PROF_BONUS_PER_50;
+  // return 1 + Math.floor((G.proficiency[elem] || 0) / 50) * PROF_BONUS_PER_50;
+  return 1;
 }
 
 function showFeedback(text, color) {
@@ -1064,11 +1059,12 @@ function damageEnemy(e, baseDmg, elem) {
   const profMult = getProfMult(elem);
   const mult = getDamageMultiplier(elem, e);
   const buffMult = getBuffMult(elem);
-  let dmg = Math.max(1, Math.round(baseDmg * mult * profMult * buffMult));
+  let dmg = Math.max(0, Math.round(baseDmg * mult * profMult * buffMult * 10)/10);
   e.hp -= dmg;
   e.hitFlash = 8;
-  addFloatText(e.x, e.y - e.r - 5, String(dmg), mult > 1 ? '#ffeb3b' : '#fff');
+  addFloatText(e.x, e.y - e.r - 5, Math.round(dmg), mult > 1 ? '#ffeb3b' : '#fff');
   if (mult > 1) addFloatText(e.x, e.y - e.r - 18, '克制', '#ff6b35');
+  else if (mult < 1) addFloatText(e.x, e.y - e.r - 18, '抵抗', '#888');
   if (e.hp <= 0) onEnemyDeath(e);
 }
 
@@ -1082,11 +1078,12 @@ function damageBoss(baseDmg, elem) {
     return;
   }
   const buffMult = getBuffMult(elem);
-  let dmg = Math.max(1, Math.round(baseDmg * mult * profMult * buffMult));
+  let dmg = Math.max(0, Math.round(baseDmg * mult * profMult * buffMult * 10)/10);
   b.hp -= dmg;
   b.hitFlash = 8;
-  addFloatText(b.x, b.y - b.r - 10, String(dmg), mult > 1 ? '#ffeb3b' : '#fff');
-  if (mult > 1) addFloatText(b.x, b.y - b.r - 25, '克制', '#ff6b35');
+  addFloatText(b.x, b.y - b.r - 5, Math.round(dmg), mult > 1 ? '#ffeb3b' : '#fff');
+  if (mult > 1) addFloatText(b.x, b.y - b.r - 20, '克制', '#ff6b35');
+  else if (mult < 1) addFloatText(b.x, b.y - b.r - 20, '抵抗', '#888'); 
 }
 
 function onEnemyDeath(e) {
@@ -1319,7 +1316,7 @@ function updateEnemies() {
     if (e.freezeT > 0) {
       e.freezeT--;
       e.vx*=0.5; e.vy*=0.5; e.x+=e.vx; e.y+=e.vy;
-      if (e.hp <= 0) G.enemies.splice(i, 1); // 冻结期间致死立即移除
+      if (e.hp <= 0) G.enemies.splice(i, 1); // 冰冻期间致死立即移除
       continue;
     }
     if (e.rootT > 0) {
@@ -1343,8 +1340,8 @@ function updateEnemies() {
       if (e.chargeT > 0) { e.chargeT--; }
       if (d < 250 && e.chargeT === 0) { e.chargeT = 60; }
       if (e.chargeT > 30) {
-        e.vx = lerp(e.vx, Math.cos(e.facing)*spd*3, 0.2);
-        e.vy = lerp(e.vy, Math.sin(e.facing)*spd*3, 0.2);
+        e.vx = lerp(e.vx, Math.cos(e.facing)*spd*2, 0.2);
+        e.vy = lerp(e.vy, Math.sin(e.facing)*spd*2, 0.2);
       } else {
         e.vx = lerp(e.vx, Math.cos(e.facing)*spd*0.5, 0.1);
         e.vy = lerp(e.vy, Math.sin(e.facing)*spd*0.5, 0.1);
@@ -1378,42 +1375,41 @@ function updateEnemies() {
     e.x = clamp(e.x, e.r, W-e.r);
     e.y = clamp(e.y, e.r, H-e.r);
 
-    // Wall collision: enemies can't pass through, bounce back
+    // Wall collision: enemies can't pass through, bounce back 墙
     for (const w of G.walls) {
       const hw = w.size/2;
       if (e.x > w.x-hw-e.r && e.x < w.x+hw+e.r && e.y > w.y-hw-e.r && e.y < w.y+hw+e.r) {
         const dx = e.x - w.x, dy = e.y - w.y;
         const ang = Math.atan2(dy, dx);
-        if (Math.abs(dx) > Math.abs(dy)) {
+        const dmg = t.dmg;
+        w.hp -= dmg;
+        if (Math.abs(dx) > Math.abs(dy)) {        // bounce effect
           e.x = dx > 0 ? w.x+hw+e.r : w.x-hw-e.r;
-          e.vx = -e.vx * 0.3 + Math.cos(ang)*6;
+          e.vx = -e.vx + Math.cos(ang)*6;
         } else {
           e.y = dy > 0 ? w.y+hw+e.r : w.y-hw-e.r;
-          e.vy = -e.vy * 0.3 + Math.sin(ang)*6;
+          e.vy = -e.vy + Math.sin(ang)*6;
         }
-        // Wall takes damage from contact, bounce effect
-        w.hp -= 5;
         addParticles(e.x, e.y, '#fdd835', 6, 4, 15);
         e.hitFlash = 4;
       }
     }
 
-    // Collision with tree spirits (enemies attack them)
+    // Collision with tree spirits (enemies) 碰撞击木灵
     for (const s of G.treeSpirits) {
       if (dist(e, s) < e.r + s.r && s.hitFlash <= 0) {
-        const dmg = t.spd > 1 ? t.dmg / t.spd : t.dmg;
+        const dmg = t.dmg;
         s.hp -= dmg;
         s.hitFlash = 30;
-        addFloatText(s.x, s.y - s.r - 5, '-' + Math.round(dmg), '#f44336');
         const ang = Math.atan2(s.y-e.y, s.x-e.x);
-        e.vx -= Math.cos(ang)*2; e.vy -= Math.sin(ang)*2;
+        e.vx -= Math.cos(ang)*6; e.vy -= Math.sin(ang)*6;
       }
     }
 
     // Collision with player
     if (target === p && dist(e, p) < e.r + p.r) {
       if (p.hitFlash <= 0) {
-        let dmg = t.spd > 1 ? t.dmg / t.spd : t.dmg;
+        const dmg = t.dmg;
         if (p.shield > 0) {
           const absorbed = Math.min(p.shield, dmg);
           p.shield -= absorbed; dmg -= absorbed;
@@ -1421,7 +1417,7 @@ function updateEnemies() {
         p.hp -= dmg;
         p.hitFlash = 30;
         G.shake = 6;
-        addFloatText(p.x, p.y-25, '-'+Math.round(dmg), '#f44336');
+        addFloatText(p.x, p.y-10, '-'+Math.round(dmg), '#f44336');
       }
       // Knockback
       const ang = Math.atan2(p.y-e.y, p.x-e.x);
@@ -1445,14 +1441,16 @@ function updateProjectiles() {
       continue;
     }
     pr.x += pr.vx; pr.y += pr.vy;
-    if (pr.range) {
+    if (pr.range && !pr.split) {
       pr.traveled = (pr.traveled||0) + Math.hypot(pr.vx, pr.vy);
       if (pr.traveled > pr.range) pr.life = 0;
     }
     // Wall blocking: player projectiles can't pass through walls
     if (!pr.enemy && isInsideWall(pr.x, pr.y)) {
+      if (pr.cost) G.materials[pr.elem] += pr.cost;
+      addParticles(pr.x, pr.y, '#8d6e63', 5, 2, 20);
+      showFeedback('被墙壁阻挡', '#888');
       pr.life = 0;
-      addParticles(pr.x, pr.y, '#8d6e63', 5, 2, 15);
     }
     if (!pr.enemy) {
       for (const e of G.enemies) {
@@ -1471,15 +1469,14 @@ function updateProjectiles() {
               }
             }
           }
-          if (pr.fx === 'bind') { e.rootT = 5*60; addFloatText(e.x, e.y-e.r-5, '束缚', '#66bb6a'); }
           if (pr.slow) {
             e.slowStacks = (e.slowStacks||0) + 1;
             e.slowDecayT = SLOW_DECAY;
-            if (e.slowStacks * ICE_SLOW * getBuffSlowMult() >= ENEMY_TYPES[e.type].spd) addFloatText(e.x, e.y-e.r-5, '冻结', '#81d4fa');
+            addFloatText(e.x, e.y-e.r-20, '减速', '#81d4fa');
           }
           addParticles(pr.x, pr.y, ELEMENTS[pr.elem].color, 8, 3, 20);
           addProf(pr.elem);
-          if (pr.canSplit) splitEarth(pr);
+          if (pr.split) splitEarth(pr);
           pr.life = 0; break;
         }
       }
@@ -1500,11 +1497,11 @@ function updateProjectiles() {
         if (pr.slow) {
           G.boss.slowStacks = (G.boss.slowStacks||0) + 1;
           G.boss.slowDecayT = SLOW_DECAY;
-          if (G.boss.slowStacks * ICE_SLOW * getBuffSlowMult() >= BOSS_TYPES[G.boss.type].spd) addFloatText(G.boss.x, G.boss.y-G.boss.r-5, '冻结', '#81d4fa');
+          addFloatText(G.boss.x, G.boss.y-G.boss.r-20, '减速', '#81d4fa');
         }
         addParticles(pr.x, pr.y, ELEMENTS[pr.elem].color, 12, 4, 25);
         addProf(pr.elem);
-        if (pr.canSplit) splitEarth(pr);
+        if (pr.split) splitEarth(pr);
         pr.life = 0;
       }
     } else {
@@ -1531,7 +1528,7 @@ function updateProjectiles() {
         let dmg = pr.dmg;
         if (p.shield > 0) { const a = Math.min(p.shield, dmg); p.shield -= a; dmg -= a; }
         p.hp -= dmg; p.hitFlash = 20; G.shake = 4;
-        addFloatText(p.x, p.y-25, '-'+Math.round(pr.dmg), '#f44336');
+        addFloatText(p.x, p.y-20, '-'+Math.round(pr.dmg), '#f44336');
         pr.life = 0;
       }
     }
@@ -1543,15 +1540,14 @@ function updateProjectiles() {
   }
 }
 
-function splitEarth(pr) {
-  // Split into 4 fragments: NE, NW, SE, SW relative to initial direction
+function splitEarth(pr) {  // Split into 4 fragments: NE, NW, SE, SW relative to initial direction
   const baseAng = pr.splitDir || 0;
   const dirs = [baseAng + Math.PI/4, baseAng - Math.PI/4, baseAng + Math.PI*3/4, baseAng - Math.PI*3/4];
   for (const d of dirs) {
     G.projectiles.push({
-      x:pr.x, y:pr.y, vx:Math.cos(d)*5, vy:Math.sin(d)*5,
-      dmg:1, elem:pr.elem, r:5, life:300, range:null, traveled:0,
-      hitSet:new Set(), canSplit:false,
+      x:pr.x+Math.cos(d)*25, y:pr.y+Math.sin(d)*25, vx:Math.cos(d)*5, vy:Math.sin(d)*5,
+      dmg:1, elem:pr.elem, r:5, life:300, range:null, traveled:0, enemy:false, split:false,
+      hitSet:new Set(),
     });
   }
   addParticles(pr.x, pr.y, ELEMENTS[pr.elem].color, 12, 4, 25);
@@ -1804,21 +1800,40 @@ function updateBoss() {
       });
     }
   }
-
+  for (const w of G.walls) {
+      const hw = w.size/2;
+      if (b.x > w.x-hw-b.r && b.x < w.x+hw+b.r && b.y > w.y-hw-b.r && b.y < w.y+hw+b.r) {
+        w.hp -= 8;
+        addParticles(b.x, b.y, '#fdd835', 6, 4, 15);
+        const dx = b.x - w.x, dy = b.y - w.y;  // 指向被减向量b
+        const ang = Math.atan2(dy, dx);
+        if (Math.abs(dx) > Math.abs(dy)) {  // 弹反
+          b.x = dx > 0 ? w.x+hw+b.r : w.x-hw-b.r;
+          b.vx = -b.vx + Math.cos(ang)*5*spd;
+        } else {
+          b.y = dy > 0 ? w.y+hw+b.r : w.y-hw-b.r;
+          b.vy = -b.vy + Math.sin(ang)*5*spd;
+        }
+      }
+    }
   // Contact damage to player (8 dmg)
   if (dist(b, p) < b.r + p.r && p.hitFlash <= 0) {
     let dmg = 8;
     if (p.shield > 0) { const a = Math.min(p.shield, dmg); p.shield -= a; dmg -= a; }
     p.hp -= dmg; p.hitFlash = 30; G.shake = 8;
-    addFloatText(p.x, p.y - 25, '-8', '#f44336');
+    addFloatText(p.x, p.y-10, '-8', '#f44336');
+    const ang = Math.atan2(b.y - p.y, b.x - p.x);
+    p.vx -= Math.cos(ang)* 3; 
+    p.vy -= Math.sin(ang)* 3;
   }
 
-  // Boss collision with tree spirits (doesn't target them, but damages on contact)
+  // Boss collision with tree spirits (doesn't target, but damages on contact) 碰撞击木灵
   for (const s of G.treeSpirits) {
-    if (dist(b, s) < b.r + s.r) {
+    if (dist(b, s) < b.r + s.r && s.hitFlash <= 0) {
       s.hp -= 8;
+      s.hitFlash = 30;
       const ang = Math.atan2(s.y - b.y, s.x - b.x);
-      s.vx += Math.cos(ang) * 3; s.vy += Math.sin(ang) * 3;
+      b.vx -= Math.cos(ang) * 4; b.vy -= Math.sin(ang) * 4;
     }
   }
 
@@ -2140,7 +2155,10 @@ function drawEvacPoint() {
   ctx.beginPath(); ctx.arc(0, 0, e.r, 0, TAU); ctx.fill();
   ctx.globalAlpha = 1; ctx.shadowBlur = 0;
   ctx.fillStyle = '#4fc3f7'; ctx.font = 'bold 12px sans-serif'; ctx.textAlign = 'center';
-  ctx.fillText('撤离', 0, 4);
+  ctx.fillText('撤离点', 0, 0);
+  const sec = Math.ceil((G.waveCD || 0) / 60);
+  ctx.font = 'bold 14px sans-serif';
+  ctx.fillText(sec + 's', 0, 18);
   ctx.restore();
 }
 
@@ -2278,7 +2296,7 @@ function drawLineEffects() {
       ctx.stroke();
     } else if (le.type === 'fan') {
       ctx.fillStyle = le.color;
-      ctx.globalAlpha = a * 0.3;
+      ctx.globalAlpha = a * 0.5;
       ctx.beginPath();
       ctx.moveTo(le.x, le.y);
       ctx.arc(le.x, le.y, le.radius, le.ang - le.angle/2, le.ang + le.angle/2);
@@ -2393,7 +2411,6 @@ function drawEnhanceDrops() {
     ctx.closePath(); ctx.fill();
     ctx.shadowBlur = 0;
     ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.stroke();
-    // Star icon inside
     ctx.rotate(-d.pulse * 0.3);
     ctx.fillStyle = '#fff';
     ctx.font = 'bold 14px sans-serif';
@@ -2404,7 +2421,7 @@ function drawEnhanceDrops() {
 }
 
 function drawFloatTexts() {
-  ctx.textAlign = 'center'; ctx.font = 'bold 16px sans-serif';
+  ctx.textAlign = 'center'; ctx.font = 'bold 14px sans-serif';
   for (const t of G.floatTexts) {
     const a = t.life / 60;
     ctx.globalAlpha = a;
@@ -2434,8 +2451,8 @@ function drawJoystick() {
     ctx.beginPath(); ctx.arc(hx, hy, 50, 0, TAU); ctx.stroke();
     ctx.fillStyle = 'rgba(255,255,255,0.06)';
     ctx.beginPath(); ctx.arc(hx, hy, 50, 0, TAU); ctx.fill();
-    ctx.fillStyle = 'rgba(255,255,255,0.2)'; ctx.font = 'bold 11px sans-serif'; ctx.textAlign = 'center';
-    ctx.fillText('移动', hx, hy+4);
+    ctx.fillStyle = 'rgba(255,255,255,0.2)'; ctx.font = 'bold 10px sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText('左屏移动', hx, hy+4);
   }
 }
 
@@ -2447,8 +2464,8 @@ function drawGestureHint() {
   ctx.fillStyle = '#ff6b35';
   ctx.fillRect(W/2, 0, W/2, H);
   ctx.globalAlpha = 0.15 * t;
-  ctx.fillStyle = '#ff6b35'; ctx.font = 'bold 14px sans-serif'; ctx.textAlign = 'center';
-  ctx.fillText('画手势施法', W*0.75, H*0.5);
+  ctx.fillStyle = '#ff6b35'; ctx.font = 'bold 10px sans-serif'; ctx.textAlign = 'center';
+  ctx.fillText('右屏绘制图形', W*0.75, H*0.5);
   ctx.globalAlpha = 1;
 }
 
@@ -2557,7 +2574,7 @@ function updateHUD() {
     if (!b || b.timer <= 0) continue;
     const sec = Math.ceil(b.timer / 60);
     const col = ELEMENTS[elem].color;
-    chips += '<span class="buff-chip" style="background:' + col + '33;color:' + col + ';border:1px solid ' + col + '">' + ELEMENTS[elem].name + ' ×' + b.stacks + ' ' + sec + 's</span>';
+    chips += '<span class="buff-chip" style="background:' + col + '33;color:' + col + ';border:1px solid ' + col + '">' + ELEMENTS[elem].name + ' ' + b.stacks + '层 ' + sec + 's</span>';
   }
   buffBox.innerHTML = chips;
 }
@@ -2730,8 +2747,8 @@ function backToHome() {
   document.getElementById('hud').classList.add('hidden');
   document.getElementById('gameover-screen').classList.add('hidden');
   document.getElementById('pause-screen').classList.add('hidden');
-  document.getElementById('start-screen').classList.remove('hidden');
   document.getElementById('adv-display').textContent = '当前冒险等级: ' + G.adventureLevel;
+  document.getElementById('start-screen').classList.remove('hidden');
   document.getElementById('continue-btn').classList.toggle('hidden', !hasSave());
 }
 
