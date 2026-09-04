@@ -738,7 +738,7 @@ function castSpell(spell) {
       } else {
         damageEnemy(target, spell.dmg, spell.elem);
       }
-      if (spell.fx === 'bind') {
+      if (spell.fx === 'bind' && target != G.boss) {  // 无法束缚boss
         target.rootT = spell.rootT;
         addFloatText(target.x, target.y-target.r-20, '束缚', '#66bb6a');
       }
@@ -965,7 +965,7 @@ function healAllTreeSpirits() {  //强化所有木灵
   for (const s of G.treeSpirits) {
     s.hp += 20;
     addParticles(s.x, s.y, '#66bb6a', 15, 3, 30);
-    addFloatText(s.x, s.y - s.r - 5, '成长', '#66bb6a');
+    addFloatText(s.x, s.y - s.r - 15, '成长', '#66bb6a');
   }
 }
 
@@ -1070,9 +1070,9 @@ function damageEnemy(e, baseDmg, elem) {
   let dmg = Math.max(0, Math.round(baseDmg * mult * profMult * buffMult * 10)/10);
   e.hp -= dmg;
   e.hitFlash = 8;
-  addFloatText(e.x, e.y - e.r - 5, Math.round(dmg), mult > 1 ? '#ffeb3b' : '#fff');
-  if (mult > 1) addFloatText(e.x, e.y - e.r - 18, '克制', '#ff6b35');
-  else if (mult < 1) addFloatText(e.x, e.y - e.r - 18, '抵抗', '#888');
+  addFloatText(e.x, e.y - e.r - 5, '-' +Math.round(dmg), mult > 1 ? '#ffeb3b' : '#fff');
+  if (mult > 1) addFloatText(e.x, e.y - e.r - 20, '克制', '#ff6b35');
+  else if (mult < 1) addFloatText(e.x, e.y - e.r - 20, '抵抗', '#888');
   if (e.hp <= 0) onEnemyDeath(e);
 }
 
@@ -1089,7 +1089,7 @@ function damageBoss(baseDmg, elem) {
   let dmg = Math.max(0, Math.round(baseDmg * mult * profMult * buffMult * 10)/10);
   b.hp -= dmg;
   b.hitFlash = 8;
-  addFloatText(b.x, b.y - b.r - 5, Math.round(dmg), mult > 1 ? '#ffeb3b' : '#fff');
+  addFloatText(b.x, b.y - b.r - 5, '-' +Math.round(dmg), mult > 1 ? '#ffeb3b' : '#fff');
   if (mult > 1) addFloatText(b.x, b.y - b.r - 20, '克制', '#ff6b35');
   else if (mult < 1) addFloatText(b.x, b.y - b.r - 20, '抵抗', '#888'); 
 }
@@ -1394,24 +1394,24 @@ function updateEnemies() {
         w.hp -= dmg;
         if (Math.abs(dx) > Math.abs(dy)) {        // bounce effect
           e.x = dx > 0 ? w.x+hw+e.r : w.x-hw-e.r;
-          e.vx = -e.vx + Math.cos(ang)*6;
+          e.vx = -2*e.vx + Math.cos(ang)*10;
         } else {
           e.y = dy > 0 ? w.y+hw+e.r : w.y-hw-e.r;
-          e.vy = -e.vy + Math.sin(ang)*6;
+          e.vy = -2*e.vy + Math.sin(ang)*10;
         }
         addParticles(e.x, e.y, '#fdd835', 6, 4, 15);
         e.hitFlash = 4;
       }
     }
 
-    // Collision with tree spirits (enemies) 碰撞击木灵
+    // Collision with tree spirits  碰撞击木灵
     for (const s of G.treeSpirits) {
       if (dist(e, s) < e.r + s.r && s.hitFlash <= 0) {
         const dmg = t.dmg;
         s.hp -= dmg;
         s.hitFlash = 30;
         const ang = Math.atan2(s.y-e.y, s.x-e.x);
-        e.vx -= Math.cos(ang)*6; e.vy -= Math.sin(ang)*6;
+        e.vx -= Math.cos(ang)*8; e.vy -= Math.sin(ang)*8;
       }
     }
 
@@ -1426,9 +1426,8 @@ function updateEnemies() {
         p.hp -= dmg;
         p.hitFlash = 30;
         G.shake = 6;
-        addFloatText(p.x, p.y-10, '-'+Math.round(dmg), '#f44336');
+        addFloatText(p.x, p.y-p.r-10, '-'+Math.round(dmg), '#f44336');
       }
-      // Knockback
       const ang = Math.atan2(p.y-e.y, p.x-e.x);
       p.vx += Math.cos(ang)*3; p.vy += Math.sin(ang)*3;
       e.vx -= Math.cos(ang)*3; e.vy -= Math.sin(ang)*3;
@@ -1527,17 +1526,18 @@ function updateProjectiles() {
           s.hp -= pr.dmg;
           s.hitFlash = 20;
           addParticles(s.x, s.y, '#66bb6a', 8, 3, 20);
-          addFloatText(s.x, s.y-s.r-5, '-'+pr.dmg, '#f44336');
+          addFloatText(s.x, s.y-s.r-10, '-'+pr.dmg, '#f44336');
           pr.life = 0;
           break;
         }
       }
+      // Enemy projectile vs player
       if (pr.life > 0 && dist(pr, p) < pr.r + p.r && !pr.hitSet.has(p)) {
         pr.hitSet.add(p);
         let dmg = pr.dmg;
         if (p.shield > 0) { const a = Math.min(p.shield, dmg); p.shield -= a; dmg -= a; }
         p.hp -= dmg; p.hitFlash = 20; G.shake = 4;
-        addFloatText(p.x, p.y-20, '-'+Math.round(pr.dmg), '#f44336');
+        addFloatText(p.x, p.y-p.r-10, '-'+pr.dmg, '#f44336');
         pr.life = 0;
       }
     }
@@ -1579,7 +1579,7 @@ function updateCrystals() {
     c.pulse += 0.08;
     if (dist(c, p) < c.r + p.r) {
       G.materials[c.elem] = (G.materials[c.elem]||0) + 3;
-      addFloatText(c.x, c.y, '+'+ELEMENTS[c.elem].name+'x3', ELEMENTS[c.elem].color);
+      addFloatText(c.x, c.y, ELEMENTS[c.elem].name+'+3', ELEMENTS[c.elem].color);
       addParticles(c.x, c.y, ELEMENTS[c.elem].color, 10, 3, 25);
       G.crystals.splice(i, 1);
       updateMaterialUI();
@@ -1596,7 +1596,7 @@ function updateHealPacks() {
     if (dist(h, p) < h.r + p.r) {
       const heal = Math.min(20, p.maxHp - p.hp);
       p.hp += heal;
-      addFloatText(p.x, p.y-20, '+'+heal+' HP', '#66bb6a');
+      addFloatText(p.x, p.y-p.r-15, '+'+heal+' HP', '#66bb6a');
       addParticles(h.x, h.y, '#66bb6a', 15, 4, 30);
       G.healPacks.splice(i, 1);
     }
@@ -1634,7 +1634,7 @@ function updateHealZones() {
         const heal = Math.min(z.healRate, p.maxHp - p.hp);
         if (heal > 0) {
           p.hp += heal;
-          addFloatText(p.x, p.y-20, '+'+heal, '#42a5f5');
+          addFloatText(p.x, p.y-p.r-15, '+'+heal+' HP', '#42a5f5');
           addProf('water');
         }
       }
@@ -1803,16 +1803,17 @@ function updateBoss() {
       for (const da of [-0.4, 0, 0.4]) {
         G.projectiles.push({
           x: b.x, y: b.y, vx: Math.cos(ang+da)*3, vy: Math.sin(ang+da)*3,
-          dmg: 8, elem: b.elemMode, r: 8, life: 120, enemy: true, hitSet: new Set(),
+          dmg: 8, elem: b.elemMode, r: 8, life: 180, enemy: true, hitSet: new Set(),
         });
       }
     } else {
       G.projectiles.push({
         x: b.x, y: b.y, vx: Math.cos(ang)*3, vy: Math.sin(ang)*3,
-        dmg: 8, elem: b.elemMode, r: 8, life: 120, enemy: true, hitSet: new Set(),
+        dmg: 8, elem: b.elemMode, r: 8, life: 180, enemy: true, hitSet: new Set(),
       });
     }
   }
+
   for (const w of G.walls) {
       const hw = w.size/2;
       if (b.x > w.x-hw-b.r && b.x < w.x+hw+b.r && b.y > w.y-hw-b.r && b.y < w.y+hw+b.r) {
@@ -1829,17 +1830,16 @@ function updateBoss() {
         }
       }
     }
-  // Contact damage to player (8 dmg)
+  // Contact damage to player 
   if (dist(b, p) < b.r + p.r && p.hitFlash <= 0) {
     let dmg = 8;
     if (p.shield > 0) { const a = Math.min(p.shield, dmg); p.shield -= a; dmg -= a; }
     p.hp -= dmg; p.hitFlash = 30; G.shake = 8;
-    addFloatText(p.x, p.y-10, '-8', '#f44336');
+    addFloatText(p.x, p.y-p.r-10, '-' + dmg, '#f44336');
     const ang = Math.atan2(b.y - p.y, b.x - p.x);
     p.vx -= Math.cos(ang)* 3; 
     p.vy -= Math.sin(ang)* 3;
   }
-
   // Boss collision with tree spirits (doesn't target, but damages on contact) 碰撞击木灵
   for (const s of G.treeSpirits) {
     if (dist(b, s) < b.r + s.r && s.hitFlash <= 0) {
@@ -1964,7 +1964,6 @@ function updateEnhanceDrops() {
         const spell = ENHANCE_SPELLS.find(s => s.id === d.spellId);
         showFeedback('解锁强化法术：' + spell.name + '！', ELEMENTS[spell.elem].color);
         addParticles(d.x, d.y, ELEMENTS[spell.elem].color, 25, 5, 40);
-        addFloatText(d.x, d.y - 20, '解锁！', '#ffeb3b');
       }
       G.enhanceDrops.splice(i, 1);
     }
