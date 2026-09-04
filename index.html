@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no,viewport-fit=cover">
-<title>魔法远征 · V1.1 Flash</title>
+<title>魔法轨迹 · V1.1 Flash</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 body{background:#0a0a14;overflow:hidden;font-family:'Microsoft YaHei',sans-serif;color:#fff;touch-action:none}
@@ -169,7 +169,7 @@ button:hover{transform:scale(1.05)}
 </div>
 
 <div id="start-screen" class="overlay">
-  <h1>魔法远征</h1>
+  <h1>魔法轨迹 · V1.1 Flash</h1>
   <p class="subtitle">MAHO EXPEDITION</p>
 
   <div class="panel" id="ctrl-pc" style="text-align:center;">
@@ -296,8 +296,8 @@ const SPELLS = [
   { id:'water_line',   name:'龙王一喷',     elem:'water',   gesture:'LINE', cost:1, type:'line',        dmg:2, len:2*UNIT },
   // === CIRCLE (2星) 范围法术 ===
   { id:'fire_circle',  name:'朱雀扇',   elem:'fire',    gesture:'CIRCLE', cost:2, type:'fan',      dmg:4, radius:3*UNIT, angle:Math.PI*2/3 },
-  { id:'wood_circle',  name:'木灵召唤', elem:'wood',    gesture:'CIRCLE', cost:2, type:'summon',   spiritHp:20, dur:9999 },
-  { id:'earth_circle', name:'守护之墙',     elem:'earth',   gesture:'CIRCLE', cost:2, type:'wall',     size:2*UNIT, dur:60*60, wallHp:50 },
+  { id:'wood_circle',  name:'木灵召唤', elem:'wood',    gesture:'CIRCLE', cost:2, type:'summon',   spiritHp:20, dmg:2, dur:9999 },
+  { id:'earth_circle', name:'守护之墙',     elem:'earth',   gesture:'CIRCLE', cost:2, type:'wall',     size:1.5*UNIT, dur:60*60, wallHp:50 },
   { id:'thunder_circle',name:'雷の呼吸·壹之型', elem:'thunder', gesture:'CIRCLE', cost:2, type:'chain',    dmg:3, range:3*UNIT, maxJumps:6 },
   { id:'ice_circle',   name:'千里冰封',     elem:'ice',     gesture:'CIRCLE', cost:2, type:'freeze',   radius:2*UNIT, dmg:3, freezeMon:6*60, freezeBoss:3*60 },
   { id:'water_circle', name:'春风化雨', elem:'water',   gesture:'CIRCLE', cost:2, type:'healzone', radius:2*UNIT, healRate:10, dur:5*60 },
@@ -321,9 +321,9 @@ const ENEMY_TYPES = {
   slime:   { name:'史莱姆', elem:'water',   hp:3, spd:1.0, dmg:4, r:13, drop:'water',   ai:'chase'  },
   wolf:    { name:'土野狼',   elem:'earth',   hp:3, spd:1.5, dmg:3, r:14, drop:'earth',   ai:'charge' },
   bat:     { name:'雷蝙蝠',   elem:'thunder', hp:3, spd:2.0, dmg:2, r:12, drop:'thunder', ai:'swarm'  },
-  spirit:  { name:'树精',     elem:'wood',    hp:6, spd:.75,  dmg:4, r:20, drop:'wood',    ai:'ranged', atkRange:200, atkCD:120, elite:true },
+  spirit:  { name:'树精',     elem:'wood',    hp:6, spd:.75,  dmg:4, r:20, drop:'wood',    ai:'ranged', atkRange:3*UNIT, atkCD:120, elite:true },
   firebug: { name:'熔岩虫',   elem:'fire',    hp:3, spd:1.0, dmg:4, r:15, drop:'fire',    ai:'swarm'  },
-  iceshard:{ name:'雪怪',    elem:'ice',     hp:4, spd:1.2, dmg:3, r:16, drop:'ice',     ai:'charge'  },
+  iceshard:{ name:'雪怪',    elem:'ice',     hp:4, spd:1.25, dmg:3, r:16, drop:'ice',     ai:'charge'  },
 };
 
 const COUNTERS = {
@@ -860,7 +860,7 @@ function castSpell(spell) {
     addParticles(p.x, p.y, '#42a5f5', 20, 3, 40);
   } else if (spell.type === 'wall') {
     // 土：正方形城墙，边长2单位
-    const wallHp = Math.round(spell.wallHp * getBuffWallHpMult());
+    const wallHp = spell.wallHp * getBuffWallHpMult();
     G.walls.push({x:p.x, y:p.y, size:spell.size, hp:wallHp, maxHp:wallHp, life:spell.dur});
     // 推斥敌人
     for (const e of G.enemies) {
@@ -882,9 +882,10 @@ function castSpell(spell) {
     addProf(spell.elem);
   } else if (spell.type === 'summon') {
     // 木：召唤木灵，血量20，嘲讽
+    const Hp = spell.spiritHp * getBuffWoodMult();
     G.treeSpirits.push({
-      x: p.x + Math.cos(p.facing)*40, y: p.y + Math.sin(p.facing)*40,
-      vx:0, vy:0, r:18, hp:spell.spiritHp, maxHp:spell.spiritHp, atkTimer:0, hitFlash:0, atkFx:0,
+      x: p.x + Math.cos(p.facing)*20, y: p.y + Math.sin(p.facing)*20, dmg:spell.dmg,
+      vx:0, vy:0, r:18, hp:Hp, maxHp:Hp, atkTimer:0, hitFlash:0, atkFx:0,
     });
     addParticles(p.x, p.y, '#66bb6a', 25, 4, 40);
   } else if (spell.type === 'chain') {
@@ -892,21 +893,24 @@ function castSpell(spell) {
     const targets = [];
     const hit = new Set();
     let from = {x:p.x, y:p.y};
-    const allTargets = [...G.enemies];
-    if (G.boss) allTargets.push(G.boss);
-    for (let j=0; j<Math.round(spell.maxJumps * getBuffMaxJumpsMult()); j++) {
-      let nearest=null, md=spell.range;
-      for (const e of allTargets) {
+    const MaxJumps = spell.maxJumps * getBuffMaxJumpsMult();
+    for (let j=0; j<MaxJumps; j++) {
+      let near=null, md=spell.range;
+      for (const e of G.enemies) {
         if (hit.has(e)) continue;
-        const d = Math.hypot(e.x-from.x, e.y-from.y);
-        if (d < md) { md=d; nearest=e; }
+        const d = Math.hypot(e.x - from.x, e.y - from.y) - e.r;
+        if (d < md) { md = d; near = e; }
       }
-      if (!nearest) break;
-      hit.add(nearest);
-      targets.push({x1:from.x, y1:from.y, x2:nearest.x, y2:nearest.y});
-      if (nearest === G.boss) damageBoss(spell.dmg, 'thunder');
-      else damageEnemy(nearest, spell.dmg, 'thunder');
-      from = {x:nearest.x, y:nearest.y};
+      if (G.boss && !hit.has(G.boss)) {
+        const d = Math.hypot(G.boss.x - from.x, G.boss.y - from.y) - G.boss.r;
+        if (d < md) { near = G.boss; }
+      }
+      if (!near) break;
+      hit.add(near);
+      targets.push({x1:from.x, y1:from.y, x2:near.x, y2:near.y}); 
+      if (near === G.boss) damageBoss(spell.dmg, 'thunder');
+      else damageEnemy(near, spell.dmg, 'thunder');
+      from = {x:near.x, y:near.y};
     }
     if (targets.length > 0) {
       G.lineEffects.push({type:'chain', segs:targets, elem:'thunder', life:45, color:ELEMENTS.thunder.color});
@@ -921,17 +925,18 @@ function castSpell(spell) {
     // 冰：冰冻半径2单位内小怪6s/Boss 3s，造成3伤害
     G.lineEffects.push({type:'circle', x:p.x, y:p.y, r:spell.radius, elem:spell.elem, life:60, color:ELEMENTS[spell.elem].color});
     let hitAny = false;
+    const buffIce = getBuffIceMult();
     for (const e of G.enemies) {
       if (dist(e, p) < spell.radius + e.r) {
         damageEnemy(e, spell.dmg, spell.elem);
-        e.freezeT = Math.max(e.freezeT, spell.freezeMon);
+        e.freezeT = Math.max(e.freezeT, spell.freezeMon * buffIce);
         hitAny = true;
       }
     }
     if (G.boss && dist(G.boss, p) < spell.radius + G.boss.r) {
       damageBoss(spell.dmg, spell.elem);
       addFloatText(G.boss.x, G.boss.y-G.boss.r-20, '冰冻', '#81d4fa');
-      G.boss.freezeT = Math.max(G.boss.freezeT || 0, spell.freezeBoss);
+      G.boss.freezeT = Math.max(G.boss.freezeT, spell.freezeBoss * buffIce);
       hitAny = true;
     }
     G.shake = 6;
@@ -956,11 +961,11 @@ function castEnhanceSpell(spell) {
   G.shake = 4;
 }
 
-function healAllTreeSpirits() {  //治愈所有木灵
+function healAllTreeSpirits() {  //强化所有木灵
   for (const s of G.treeSpirits) {
-    s.hp = s.maxHp;
+    s.hp += 20;
     addParticles(s.x, s.y, '#66bb6a', 15, 3, 30);
-    addFloatText(s.x, s.y - s.r - 5, '恢复', '#66bb6a');
+    addFloatText(s.x, s.y - s.r - 5, '成长', '#66bb6a');
   }
 }
 
@@ -989,12 +994,16 @@ function getBuffHealMult() {
   if (!b || b.timer <= 0) return 1;
   return 1 + 0.5 * b.stacks;
 }
-function getBuffSlowMult() {
+function getBuffIceMult() {
   const b = G.buffs['ice'];
   if (!b || b.timer <= 0) return 1;
   return 1 + 0.5 * b.stacks;
 }
-
+function getBuffWoodMult() {
+  const b = G.buffs['wood'];
+  if (!b || b.timer <= 0) return 1;
+  return 1 + 0.5 * b.stacks;
+}
 function updateBuffs() {
   for (const elem of ELEM_KEYS) {
     const b = G.buffs[elem];
@@ -1290,7 +1299,7 @@ function updatePlayer() {
   if (dx !== 0 || dy !== 0) {
     const len = Math.hypot(dx, dy);
     if (len > 1) { dx/=len; dy/=len; }
-    let spd = 3;
+    let spd = 2.5;
     if (G.isDrawing) spd -= 0.5;
     p.vx = lerp(p.vx, dx*spd, 0.2);
     p.vy = lerp(p.vy, dy*spd, 0.2);
@@ -1307,6 +1316,7 @@ function updatePlayer() {
 
 function updateEnemies() {
   const p = G.player;
+  const buffIce = getBuffIceMult();
   for (let i = G.enemies.length-1; i >= 0; i--) {
     const e = G.enemies[i];
     const t = ENEMY_TYPES[e.type];
@@ -1323,7 +1333,7 @@ function updateEnemies() {
       if (e.hp <= 0) G.enemies.splice(i, 1); // 束缚期间致死立即移除
       continue;
     }
-    const spd = Math.max(0, t.spd - ICE_SLOW * getBuffSlowMult() * (e.slowStacks||0));
+    const spd = Math.max(0, t.spd - ICE_SLOW * buffIce * (e.slowStacks||0));
     const d = Math.hypot(p.x-e.x, p.y-e.y);
     // Taunt: target nearest tree spirit if within 2 units
     let target = p;
@@ -1336,25 +1346,25 @@ function updateEnemies() {
       e.vx = lerp(e.vx, Math.cos(e.facing)*spd, 0.1);
       e.vy = lerp(e.vy, Math.sin(e.facing)*spd, 0.1);
     } else if (t.ai === 'charge') {
-      if (e.chargeT > 0) { e.chargeT--; }
-      if (d < 250 && e.chargeT === 0) { e.chargeT = 60; }
-      if (e.chargeT > 30) {
+      e.chargeT--;
+      if (d < 3*UNIT && e.chargeT <= 0) { e.chargeT = 120; }
+      if (e.chargeT > 90) {
         e.vx = lerp(e.vx, Math.cos(e.facing)*spd*2, 0.2);
         e.vy = lerp(e.vy, Math.sin(e.facing)*spd*2, 0.2);
       } else {
-        e.vx = lerp(e.vx, Math.cos(e.facing)*spd*0.5, 0.1);
-        e.vy = lerp(e.vy, Math.sin(e.facing)*spd*0.5, 0.1);
+        e.vx = lerp(e.vx, Math.cos(e.facing)*spd, 0.1);
+        e.vy = lerp(e.vy, Math.sin(e.facing)*spd, 0.1);
       }
     } else if (t.ai === 'swarm') {
       e.swarmAngle += 0.05;
       const ang = e.facing + Math.sin(e.swarmAngle)*0.6;
-      e.vx = lerp(e.vx, Math.cos(ang)*spd, 0.1);
-      e.vy = lerp(e.vy, Math.sin(ang)*spd, 0.1);
+      e.vx = lerp(e.vx, Math.cos(ang)*spd, 0.2);
+      e.vy = lerp(e.vy, Math.sin(ang)*spd, 0.2);
     } else if (t.ai === 'ranged') {
       if (d > t.atkRange) {
         e.vx = lerp(e.vx, Math.cos(e.facing)*spd, 0.1);
         e.vy = lerp(e.vy, Math.sin(e.facing)*spd, 0.1);
-      } else if (d < t.atkRange*0.6) {
+      } else if (d < t.atkRange*0.5) {
         e.vx = lerp(e.vx, -Math.cos(e.facing)*spd, 0.1);
         e.vy = lerp(e.vy, -Math.sin(e.facing)*spd, 0.1);
       } else {
@@ -1365,8 +1375,8 @@ function updateEnemies() {
         e.atkCD = t.atkCD;
         const ang = e.facing;
         G.projectiles.push({
-          x:e.x, y:e.y, vx:Math.cos(ang)*2.5, vy:Math.sin(ang)*2.5,
-          dmg:4, elem:'wood', r:7, life:150, enemy:true, hitSet:new Set(),
+          x:e.x, y:e.y, vx:Math.cos(ang)*3, vy:Math.sin(ang)*3,
+          dmg:4, elem:'wood', r:6, life:120, enemy:true, hitSet:new Set(),
         });
       }
     }
@@ -1636,26 +1646,27 @@ function updateHealZones() {
   }
 }
 
-function updateTreeSpirits() {
+function updateTreeSpirits() {  // 更新木灵
   for (let i = G.treeSpirits.length - 1; i >= 0; i--) {
     const s = G.treeSpirits[i];
     if (s.hitFlash > 0) s.hitFlash--;
     if (s.atkFx > 0) s.atkFx--;
     s.atkTimer++;
-    // 每2秒(120帧)对1单位内敌人造成2伤害
+    // 每2秒对1单位内敌人造成2伤害
     if (s.atkTimer >= 120) {
       s.atkTimer = 0;
-      s.atkFx = 24; // 攻击特效持续0.4秒
+      s.atkFx = 30; // 攻击特效持续
       for (const e of G.enemies) {
         if (dist(e, s) < UNIT + e.r) {
           damageEnemy(e, 2, 'wood');
           addParticles(e.x, e.y, '#66bb6a', 5, 3, 20);
+          addProf('wood');
         }
       }
       if (G.boss && dist(G.boss, s) < UNIT + G.boss.r) {
         damageBoss(2, 'wood');
+        addProf('wood');
       }
-      addProf('wood');
     }
     if (s.hp <= 0) {
       addParticles(s.x, s.y, '#66bb6a', 20, 5, 40);
@@ -1746,13 +1757,16 @@ function updateBoss() {
     b.moveT = 120;
   }
   const spdMult = phase.spdMult || 1;
-  if (b.slowStacks > 0) { if (b.slowDecayT > 0) b.slowDecayT--; else { b.slowStacks--; b.slowDecayT = SLOW_DECAY; } }
-  const spd = Math.max(0, def.spd * spdMult - ICE_SLOW * getBuffSlowMult() * (b.slowStacks||0));
+  if (b.slowStacks > 0) { 
+    if (b.slowDecayT > 0) b.slowDecayT--; 
+    else { b.slowStacks--; b.slowDecayT = SLOW_DECAY; } 
+  }
+  const spd = Math.max(0, def.spd * spdMult - ICE_SLOW * getBuffIceMult() * (b.slowStacks||0));
   const dx = b.targetX - b.x, dy = b.targetY - b.y;
   const d = Math.hypot(dx, dy);
-  if (d > 5) {
-    b.vx = lerp(b.vx, (dx / d) * spd, 0.05);
-    b.vy = lerp(b.vy, (dy / d) * spd, 0.05);
+  if (d > b.r) {
+    b.vx = lerp(b.vx, (dx / d) * spd, 0.1);
+    b.vy = lerp(b.vy, (dy / d) * spd, 0.1);
   }
   b.x = clamp(b.x + b.vx, b.r, W - b.r);
   b.y = clamp(b.y + b.vy, b.r, H - b.r);
@@ -1780,22 +1794,22 @@ function updateBoss() {
     showFeedback('Boss召唤了' + ENEMY_TYPES[summonType].name + '！', '#ff9800');
   }
 
-  // Boss ranged attack (medium speed, scatter in狂暴)
+  // Boss ranged attack (scatter 狂暴)
   b.atkCD--;
   if (b.atkCD <= 0) {
-    b.atkCD = phase.scatter ? 75 : 90;
+    b.atkCD = phase.scatter ? 60 : 80;
     const ang = b.facing;
     if (phase.scatter) {
-      for (const da of [-0.3, 0, 0.3]) {
+      for (const da of [-0.4, 0, 0.4]) {
         G.projectiles.push({
           x: b.x, y: b.y, vx: Math.cos(ang+da)*3, vy: Math.sin(ang+da)*3,
-          dmg: 8, elem: b.elemMode, r: 10, life: 120, enemy: true, hitSet: new Set(),
+          dmg: 8, elem: b.elemMode, r: 8, life: 120, enemy: true, hitSet: new Set(),
         });
       }
     } else {
       G.projectiles.push({
         x: b.x, y: b.y, vx: Math.cos(ang)*3, vy: Math.sin(ang)*3,
-        dmg: 8, elem: b.elemMode, r: 10, life: 120, enemy: true, hitSet: new Set(),
+        dmg: 8, elem: b.elemMode, r: 8, life: 120, enemy: true, hitSet: new Set(),
       });
     }
   }
@@ -1804,7 +1818,7 @@ function updateBoss() {
       if (b.x > w.x-hw-b.r && b.x < w.x+hw+b.r && b.y > w.y-hw-b.r && b.y < w.y+hw+b.r) {
         w.hp -= 8;
         addParticles(b.x, b.y, '#fdd835', 6, 4, 15);
-        const dx = b.x - w.x, dy = b.y - w.y;  // 指向被减向量b
+        const dx = b.x - w.x, dy = b.y - w.y; 
         const ang = Math.atan2(dy, dx);
         if (Math.abs(dx) > Math.abs(dy)) {  // 弹反
           b.x = dx > 0 ? w.x+hw+b.r : w.x-hw-b.r;
@@ -2615,7 +2629,7 @@ function gameOver(evacuated) {
   } else {
     title.textContent = '冒险失败';
     title.style.textShadow = '0 0 20px #f44336';
-    sub.textContent = '魔法远征暂告一段落';
+    sub.textContent = '魔法之旅暂告一段落';
   }
   s.innerHTML = '到达波数: <span>'+G.wave+'</span><br>击败敌人: <span>'+G.kills+'</span><br>冒险等级: <span>'+G.adventureLevel+'</span><br>最终分数: <span>'+G.score+'</span>';
   document.getElementById('gameover-screen').classList.remove('hidden');
