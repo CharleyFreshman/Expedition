@@ -720,7 +720,7 @@ function castSpell(spell) {
   const p = G.player;
 
   if (spell.type === 'instant') {
-    // 木：选中最近敌人，直接施加伤害+束缚，无投掷过程
+    // 藤蔓缠绕：选中最近敌人，直接施加伤害+束缚
     let target = null, md = spell.range;
     for (const e of G.enemies) {
       const d = Math.hypot(e.x-p.x, e.y-p.y);
@@ -731,25 +731,22 @@ function castSpell(spell) {
       if (d < md) target = G.boss;
     }
     if (target) {
-      // 法阵视觉效果
       G.lineEffects.push({type:'magicCircle', x:target.x, y:target.y, r:target.r+8, elem:spell.elem, life:30, color:ELEMENTS[spell.elem].color});
       if (target === G.boss) {
-        damageBoss(spell.dmg, spell.elem);
-      } else {
-        damageEnemy(target, spell.dmg, spell.elem);
-      }
-      if (spell.fx === 'bind' && target != G.boss) {  // 无法束缚boss
-        target.rootT = spell.rootT;
+        damageBoss(spell.dmg, 'wood');  // 无法束缚boss
+     } else {
+        damageEnemy(target, spell.dmg, 'wood');
+        target.rootT = spell.rootT * getBuffWoodMult();
         addFloatText(target.x, target.y-target.r-20, '束缚', '#66bb6a');
       }
-      addParticles(target.x, target.y, ELEMENTS[spell.elem].color, 10, 3, 20);
-      addProf(spell.elem);
+      addParticles(target.x, target.y, ELEMENTS['wood'].color, 10, 3, 20);
+      addProf('wood');
     } else {
       showFeedback('范围内无目标', '#888');
-      G.materials[spell.elem] += spell.cost;
+      G.materials['wood'] += spell.cost;
     }
   } else if (spell.type === 'projectile') {
-    // 碎石/火球/冰锥: track nearest enemy within range, then fly straight (dodgeable)
+    // 碎石/火球/冰锥: track nearest enemy then fly straight
     const range = spell.range;
     let target = null;
     if (range) {
@@ -780,7 +777,7 @@ function castSpell(spell) {
     const ex = p.x + Math.cos(ang)*spell.len, ey = p.y + Math.sin(ang)*spell.len;
     G.lineEffects.push({type:'water', x1:p.x, y1:p.y, x2:ex, y2:ey, elem:spell.elem, life:60, color:ELEMENTS[spell.elem].color, width:20});
     let hitAny = false;
-    const hitRange = 18;
+    const hitRange = 18 * getBuffWaterMult();
     for (const e of G.enemies) {
       if (pointToLineDist(e.x, e.y, p.x, p.y, ex, ey) < e.r + hitRange) {
         damageEnemy(e, spell.dmg, spell.elem); hitAny = true;
@@ -793,7 +790,7 @@ function castSpell(spell) {
   } else if (spell.type === 'zigzag') {
     // 雷线：闪电⚡，两折(3段)，最宽0.6单位，长3单位
     const totalLen = spell.len;
-    const maxOffset = 0.3 * UNIT; // 0.3单位，最宽0.6单位
+    const maxOffset = 0.3 * UNIT; 
     let target = null, md = totalLen;
     for (const e of G.enemies) {
       const d = Math.hypot(e.x-p.x, e.y-p.y);
@@ -818,7 +815,7 @@ function castSpell(spell) {
     G.lineEffects.push({type:'zigzag', segs, elem:spell.elem, life:30, color:ELEMENTS[spell.elem].color, width:10});
     let hitAny = false;
     const hitSet = new Set();
-    const hitRange = 12; 
+    const hitRange = 12 * getBuffThunderMult(); 
     for (const seg of segs) {
       for (const e of G.enemies) {
         if (hitSet.has(e)) continue;
@@ -833,7 +830,6 @@ function castSpell(spell) {
     if (hitAny) addProf(spell.elem);
   } else if (spell.type === 'fan') {
     // 朱雀扇：正前方90度扇形，半径3单位，伤害4
-    G.lineEffects.push({type:'fan', x:p.x, y:p.y, ang:p.facing, radius:spell.radius, angle:spell.angle, elem:spell.elem, life:45, color:ELEMENTS[spell.elem].color});
     let hitAny = false;
     for (const e of G.enemies) {
       const d = dist(e, p);
@@ -841,7 +837,7 @@ function castSpell(spell) {
       let angDiff = Math.atan2(e.y-p.y, e.x-p.x) - p.facing;
       while (angDiff > Math.PI) angDiff -= TAU;
       while (angDiff < -Math.PI) angDiff += TAU;
-      if (Math.abs(angDiff) < spell.angle/2) { damageEnemy(e, spell.dmg, spell.elem); hitAny = true; }
+      if (Math.abs(angDiff) < spell.angle/2) { damageEnemy(e, spell.dmg, 'fire'); hitAny = true; }
     }
     if (G.boss) {
       const d = dist(G.boss, p);
@@ -849,14 +845,20 @@ function castSpell(spell) {
         let angDiff = Math.atan2(G.boss.y-p.y, G.boss.x-p.x) - p.facing;
         while (angDiff > Math.PI) angDiff -= TAU;
         while (angDiff < -Math.PI) angDiff += TAU;
-        if (Math.abs(angDiff) < spell.angle/2) { damageBoss(spell.dmg, spell.elem); hitAny = true; }
+        if (Math.abs(angDiff) < spell.angle/2) { damageBoss(spell.dmg, 'fire'); hitAny = true; }
       }
     }
     G.shake = 6;
-    if (hitAny) addProf(spell.elem);
+    if (hitAny) {
+        G.lineEffects.push({type:'fan', x:p.x, y:p.y, ang:p.facing, radius:spell.radius, angle:spell.angle, elem:spell.elem, life:45, color:ELEMENTS[spell.elem].color});
+        addProf('fire');
+    } else {
+      showFeedback('范围内无目标', '#888');
+      G.materials['wood'] += spell.cost;
+    }
   } else if (spell.type === 'healzone') {
     // 水：圆形治疗领域，半径2单位，5s内每秒回复10血
-    G.healZones.push({x:p.x, y:p.y, r:spell.radius, healRate:Math.round(spell.healRate * getBuffHealMult()), timer:0, life:spell.dur});
+    G.healZones.push({x:p.x, y:p.y, r:spell.radius, healRate:Math.round(spell.healRate * getBuffWaterMult()), timer:0, life:spell.dur});
     addParticles(p.x, p.y, '#42a5f5', 20, 3, 40);
   } else if (spell.type === 'wall') {
     // 土：正方形城墙，边长2单位
@@ -879,7 +881,8 @@ function castSpell(spell) {
         damageBoss(1, 'earth');
       }
     }
-    addProf(spell.elem);
+    G.shake = 4;
+    addProf('earth');
   } else if (spell.type === 'summon') {
     // 木：召唤木灵，血量20，嘲讽
     const Hp = spell.spiritHp * getBuffWoodMult();
@@ -893,7 +896,7 @@ function castSpell(spell) {
     const targets = [];
     const hit = new Set();
     let from = {x:p.x, y:p.y};
-    const MaxJumps = spell.maxJumps * getBuffMaxJumpsMult();
+    const MaxJumps = spell.maxJumps * getBuffThunderMult();
     for (let j=0; j<MaxJumps; j++) {
       let near=null, md=spell.range;
       for (const e of G.enemies) {
@@ -914,12 +917,12 @@ function castSpell(spell) {
     }
     if (targets.length > 0) {
       G.lineEffects.push({type:'chain', segs:targets, elem:'thunder', life:45, color:ELEMENTS.thunder.color});
-      G.shake = 8;
       for (const t of targets) {
         addParticles(t.x2, t.y2, '#ab47bc', 8, 5, 25);
         addParticles(t.x2, t.y2, '#e040fb', 4, 3, 20);
       }
-      addProf(spell.elem);
+      G.shake = 8;
+      addProf('thunder');
     }
   } else if (spell.type === 'freeze') {
     // 冰：冰冻半径2单位内小怪6s/Boss 3s，造成3伤害
@@ -928,19 +931,19 @@ function castSpell(spell) {
     const buffIce = getBuffIceMult();
     for (const e of G.enemies) {
       if (dist(e, p) < spell.radius + e.r) {
-        damageEnemy(e, spell.dmg, spell.elem);
+        damageEnemy(e, spell.dmg, 'ice');
         e.freezeT = Math.max(e.freezeT, spell.freezeMon * buffIce);
         hitAny = true;
       }
     }
     if (G.boss && dist(G.boss, p) < spell.radius + G.boss.r) {
-      damageBoss(spell.dmg, spell.elem);
+      damageBoss(spell.dmg, 'ice');
       addFloatText(G.boss.x, G.boss.y-G.boss.r-20, '冰冻', '#81d4fa');
       G.boss.freezeT = Math.max(G.boss.freezeT, spell.freezeBoss * buffIce);
       hitAny = true;
     }
-    G.shake = 6;
-    if (hitAny) addProf(spell.elem);
+    G.shake = 3;
+    if (hitAny) addProf('ice');
   }
 }
 
@@ -979,7 +982,7 @@ function getBuffFireRadiusMult() {
   if (!b || b.timer <= 0) return 1;
   return 1 + 0.25 * b.stacks;
 }
-function getBuffMaxJumpsMult() {
+function getBuffThunderMult() {
   const b = G.buffs['thunder'];
   if (!b || b.timer <= 0) return 1;
   return 1 + 0.25 * b.stacks;
@@ -989,7 +992,7 @@ function getBuffWallHpMult() {
   if (!b || b.timer <= 0) return 1;
   return 1 + 0.5 * b.stacks;
 }
-function getBuffHealMult() {
+function getBuffWaterMult() {
   const b = G.buffs['water'];
   if (!b || b.timer <= 0) return 1;
   return 1 + 0.5 * b.stacks;
@@ -1071,8 +1074,8 @@ function damageEnemy(e, baseDmg, elem) {
   e.hp -= dmg;
   e.hitFlash = 8;
   addFloatText(e.x, e.y - e.r - 5, '-' +Math.round(dmg), mult > 1 ? '#ffeb3b' : '#fff');
-  if (mult > 1) addFloatText(e.x, e.y - e.r - 20, '克制', '#ff6b35');
-  else if (mult < 1) addFloatText(e.x, e.y - e.r - 20, '抵抗', '#888');
+  if (mult > 1) addFloatText(e.x, e.y - e.r - 15, '克制', '#ff6b35');
+  else if (mult < 1) addFloatText(e.x, e.y - e.r - 15, '抵抗', '#888');
   if (e.hp <= 0) onEnemyDeath(e);
 }
 
@@ -1090,8 +1093,8 @@ function damageBoss(baseDmg, elem) {
   b.hp -= dmg;
   b.hitFlash = 8;
   addFloatText(b.x, b.y - b.r - 5, '-' +Math.round(dmg), mult > 1 ? '#ffeb3b' : '#fff');
-  if (mult > 1) addFloatText(b.x, b.y - b.r - 20, '克制', '#ff6b35');
-  else if (mult < 1) addFloatText(b.x, b.y - b.r - 20, '抵抗', '#888'); 
+  if (mult > 1) addFloatText(b.x, b.y - b.r - 15, '克制', '#ff6b35');
+  else if (mult < 1) addFloatText(b.x, b.y - b.r - 15, '抵抗', '#888'); 
 }
 
 function onEnemyDeath(e) {
