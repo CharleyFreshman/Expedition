@@ -21,7 +21,7 @@ body{background:#0a0a14;overflow:hidden;font-family:'Microsoft YaHei',sans-serif
 button{padding:12px 40px;font-size:18px;color:#fff;background:linear-gradient(135deg,#ff6b35,#f7931e);border:none;border-radius:8px;cursor:pointer;margin-top:16px;transition:transform .2s}
 button:hover{transform:scale(1.05)}
 #hud{position:fixed;inset:0;pointer-events:none;z-index:50}
-#top-bar{position:absolute;top:10px;left:6px;right:6px;display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:nowrap}
+#top-bar{position:absolute;top:10px;left:6px;right:52px;display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:nowrap}
 #hp-box{width:200px;height:16px;background:rgba(0,0,0,.6);border:1px solid #444;border-radius:8px;overflow:hidden;position:relative}
 #hp-bar{height:100%;background:linear-gradient(90deg,#f44336,#ff8a65);transition:width .3s;width:100%}
 #hp-bar.shield{background:linear-gradient(90deg,#5c6bc0,#7986cb)}
@@ -36,7 +36,7 @@ button:hover{transform:scale(1.05)}
 .mslot .key{position:absolute;top:-2px;right:-2px;font-size:9px;background:#333;border-radius:3px;padding:0 3px;color:#999}
 #spell-fb{position:absolute;top:35%;left:50%;transform:translate(-50%,-50%);font-size:28px;font-weight:bold;text-shadow:0 0 10px currentColor;opacity:0;transition:opacity .3s;pointer-events:none;text-align:center;white-space:nowrap}
 #hint{position:absolute;bottom:68px;left:50%;transform:translateX(-50%);color:#666;font-size:12px}
-#buff-info{display:flex;gap:6px;align-items:center;pointer-events:none;max-width:42vw;overflow:hidden}
+#buff-info{display:flex;gap:6px;align-items:center;pointer-events:none;max-width:42vw;overflow:hidden;flex-shrink:0}
 .buff-chip{padding:2px 8px;border-radius:10px;font-size:12px;font-weight:bold;white-space:nowrap;animation:buffPulse 1s ease-in-out infinite alternate}
 @keyframes buffPulse{from{opacity:0.7}to{opacity:1}}
 .stats{color:#aaa;font-size:16px;line-height:2;text-align:center}
@@ -81,7 +81,7 @@ button:hover{transform:scale(1.05)}
   .gi svg{width:30px;height:30px}
   .gi{font-size:10px}
   /* 顶部HUD缩小 */
-  #top-bar{top:max(8px,env(safe-area-inset-top));gap:6px}
+  #top-bar{top:max(8px,env(safe-area-inset-top));gap:6px;right:max(62px,calc(env(safe-area-inset-right) + 58px))}
   #hp-box{width:120px;height:16px}
   #hp-text{font-size:10px}
   #buff-info{max-width:30vw}
@@ -137,7 +137,6 @@ button:hover{transform:scale(1.05)}
     <div id="buff-info"></div>
     <div id="hp-box"><div id="hp-bar"></div><span id="hp-text">100/100</span></div>
     <div class="tag" id="wave-tag">第1波</div>
-    <div class="tag" id="score-tag">分数 0</div>
   </div>
   <div id="mat-bar"></div>
   <div id="boss-hp-box" class="hidden"><div id="boss-hp-bar"></div><span id="boss-hp-text"></span></div>
@@ -696,10 +695,9 @@ function tryCastSpell(gestureType) {
     }
     G.materials[G.selectedMat] -= spell.cost;
     G.unsaved = true;
-    if (castSpell(spell)) {
-      showFeedback(spell.name + '！', ELEMENTS[spell.elem].color);
-      ddParticles(G.player.x, G.player.y, ELEMENTS[spell.elem].color, 6, 4, 30);
-    }
+    castEnhanceSpell(spell);
+    showFeedback(spell.name + '！', ELEMENTS[spell.elem].color);
+    return;
   }
 
   // Normal 1-star / 2-star spells
@@ -2563,7 +2561,6 @@ function updateHUD() {
   hpBar.style.width = pct + '%';
   hpBar.classList.toggle('shield', p.shield > 0);
   document.getElementById('hp-text').textContent = Math.max(0, Math.round(p.hp)) + '/' + p.maxHp + (p.shield > 0 ? ' +' + Math.round(p.shield) : '');
-  document.getElementById('score-tag').textContent = '分数 ' + G.score;
   const fb = document.getElementById('spell-fb');
   if (G.fbTimer > 0) {
     fb.textContent = G.fbText;
@@ -2616,7 +2613,7 @@ function startGame() {
   G.wave = 0; G.waveActive = false; G.waveCD = 60;
   G.score = 0; G.kills = 0;
   G.selectedMat = 'fire';
-  G.materials = { fire:8, water:8, earth:8, wood:5, thunder:5, ice:5 };
+  G.materials = { fire:5, water:5, earth:5, wood:5, thunder:5, ice:5 };
   G.proficiency = {};
   ELEM_KEYS.forEach(k => G.proficiency[k] = 0);
   G.boss = null; G.evacPoint = null;
