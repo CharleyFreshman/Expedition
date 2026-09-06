@@ -21,8 +21,8 @@ body{background:#0a0a14;overflow:hidden;font-family:'Microsoft YaHei',sans-serif
 button{padding:12px 40px;font-size:18px;color:#fff;background:linear-gradient(135deg,#ff6b35,#f7931e);border:none;border-radius:8px;cursor:pointer;margin-top:16px;transition:transform .2s}
 button:hover{transform:scale(1.05)}
 #hud{position:fixed;inset:0;pointer-events:none;z-index:50}
-#top-bar{position:absolute;top:10px;left:50%;transform:translateX(-50%);display:flex;gap:12px;align-items:center}
-#hp-box{width:200px;height:22px;background:rgba(0,0,0,.6);border:1px solid #444;border-radius:11px;overflow:hidden;position:relative}
+#top-bar{position:absolute;top:10px;left:6px;right:6px;display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:nowrap}
+#hp-box{width:200px;height:16px;background:rgba(0,0,0,.6);border:1px solid #444;border-radius:8px;overflow:hidden;position:relative}
 #hp-bar{height:100%;background:linear-gradient(90deg,#f44336,#ff8a65);transition:width .3s;width:100%}
 #hp-bar.shield{background:linear-gradient(90deg,#5c6bc0,#7986cb)}
 #hp-text{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:12px;text-shadow:0 0 3px #000}
@@ -81,10 +81,11 @@ button:hover{transform:scale(1.05)}
   .gi svg{width:30px;height:30px}
   .gi{font-size:10px}
   /* 顶部HUD缩小 */
-  #top-bar{top:max(8px,env(safe-area-inset-top));gap:8px}
-  #hp-box{width:140px;height:20px}
-  #hp-text{font-size:11px}
-  .tag{font-size:11px;padding:2px 8px}
+  #top-bar{top:max(8px,env(safe-area-inset-top));gap:6px}
+  #hp-box{width:120px;height:16px}
+  #hp-text{font-size:10px}
+  #buff-info{max-width:30vw}
+  .tag{font-size:11px;padding:2px 6px;white-space:nowrap}
   /* 材料槽加大触控 */
   #mat-bar{bottom:max(8px,env(safe-area-inset-bottom));gap:4px}
   .mslot{width:42px;height:42px;border-radius:8px}
@@ -95,7 +96,7 @@ button:hover{transform:scale(1.05)}
   #spell-fb{font-size:22px}
   #hint{display:none}
   /* Boss血条适应 */
-  #boss-hp-box{top:max(34px,calc(env(safe-area-inset-top) + 28px));width:80vw;max-width:300px}
+  #boss-hp-box{top:max(34px,calc(env(safe-area-inset-top) + 28px));width:60vw;max-width:300px}
   /* 暂停按钮加大 */
   .ctrl-btn{width:50px;height:50px;font-size:18px}
   #ctrl-btns{top:max(8px,env(safe-area-inset-top));right:max(8px,env(safe-area-inset-right))}
@@ -200,7 +201,7 @@ button:hover{transform:scale(1.05)}
       <b style="color:#fdd835">土</b> 克 <b style="color:#dd4bf7">雷</b><br>
       <b style="color:#dd4bf7">雷</b> 克 <b style="color:#ffffff">冰</b> │
       <b style="color:#ffffff">冰</b> 克 <b style="color:#7fe2fd">水</b> │
-      <b style="color:#1d96fa">水</b> 克 <b style="color:#ff6b35">火</b>
+      <b style="color:#7fe2fd">水</b> 克 <b style="color:#ff6b35">火</b>
     </p>
   </div>
 
@@ -478,14 +479,14 @@ function getTemplates() {
 }
 
 function recognizeGesture(rawPts) {
-  if (rawPts.length < 8) return {type:'NONE', score:0};
+  if (rawPts.length < 6) return {type:'NONE', score:0};
   const pts = [rawPts[0]];
   for (let i=1; i<rawPts.length; i++) {
-    if (dist(pts[pts.length-1], rawPts[i]) > 2) pts.push(rawPts[i]);
+    if (dist(pts[pts.length-1], rawPts[i]) > 3) pts.push(rawPts[i]); // 增大间距→更少点→更快
   }
-  if (pts.length < 5) return {type:'NONE', score:0};
+  if (pts.length < 4) return {type:'NONE', score:0};
   const bb = boundingBox(pts);
-  if (Math.max(bb.w, bb.h) < 30) return {type:'NONE', score:0};
+  if (Math.max(bb.w, bb.h) < 25) return {type:'NONE', score:0};
 
   // Curve detection: if path is significantly longer than straight line from start to end, it's a circle/arc
   const startEnd = dist(pts[0], pts[pts.length-1]);
@@ -505,14 +506,23 @@ function recognizeGesture(rawPts) {
     if (sides === 3) return {type:'CIRCLE', score: 0.8};
   }
 
-  // Chevron detection: V-shape with single bend (angle 30-150°)
-  if (startEnd > 30) {
+  // Chevron detection: V-shape with single bend, both arms straight (excludes W/M second valley)
+  if (startEnd > 25) {
     let maxOff = 0, bendIdx = 0;
     for (let i = 1; i < pts.length - 1; i++) {
       const d = pointToLineDist(pts[i].x, pts[i].y, pts[0].x, pts[0].y, pts[pts.length-1].x, pts[pts.length-1].y);
       if (d > maxOff) { maxOff = d; bendIdx = i; }
     }
-    if (maxOff > 15) {
+    // Arm residual: max distance of points to bend-start / bend-end lines
+    let residual = 0;
+    const bp0 = pts[bendIdx];
+    for (let i = 1; i < pts.length - 1; i++) {
+      const r = Math.min(
+        pointToLineDist(pts[i].x, pts[i].y, pts[0].x, pts[0].y, bp0.x, bp0.y),
+        pointToLineDist(pts[i].x, pts[i].y, bp0.x, bp0.y, pts[pts.length-1].x, pts[pts.length-1].y));
+      if (r > residual) residual = r;
+    }
+    if (maxOff > 12 && residual < maxOff * 0.35) {
       const bp = pts[bendIdx], sp = pts[0], ep = pts[pts.length-1];
       const v1x = sp.x - bp.x, v1y = sp.y - bp.y;
       const v2x = ep.x - bp.x, v2y = ep.y - bp.y;
@@ -533,7 +543,7 @@ function recognizeGesture(rawPts) {
   const tpls = getTemplates();
   const d = distanceAtBestAngle(normalized, tpls.LINE, -ANG_RANGE, ANG_RANGE, ANG_PREC);
   const score = 1 - d / HALF_DIAG;
-  return score > 0.5 ? {type:'LINE', score} : {type:'NONE', score:0};
+  return score > 0.4 ? {type:'LINE', score} : {type:'NONE', score:0};
 }
 
 // ======================== 游戏状态 ========================
@@ -1255,11 +1265,11 @@ canvas.addEventListener('touchcancel', touchEnd, {passive:false});
 
 function finishGesture() {
   G.isDrawing = false;
-  if (G.gesturePts.length > 5) {
+  if (G.gesturePts.length > 4) {
     const result = recognizeGesture(G.gesturePts);
-    if (result.type !== 'NONE' && result.score > 0.5) {
+    if (result.type !== 'NONE' && result.score > 0.4) {
       tryCastSpell(result.type);
-    } else if (G.gesturePts.length > 15) {
+    } else if (G.gesturePts.length > 10) {
       showFeedback('手势未识别', '#f44336');
     }
   }
