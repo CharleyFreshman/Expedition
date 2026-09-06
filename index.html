@@ -160,7 +160,7 @@ button:hover{transform:scale(1.05)}
   </div>
   <div id="save-msg" class="save-msg hidden"></div>
   <div id="quit-confirm" class="quit-confirm hidden">
-    <p>有未保存的关卡，确认放弃？</p>
+    <p>关卡未保存，确认放弃？</p>
     <div class="btn-row">
       <button id="quit-confirm-yes" class="btn-red">确认放弃</button>
       <button id="quit-confirm-no" class="btn-green">取消</button>
@@ -200,7 +200,7 @@ button:hover{transform:scale(1.05)}
       <b style="color:#fdd835">土</b> 克 <b style="color:#dd4bf7">雷</b><br>
       <b style="color:#dd4bf7">雷</b> 克 <b style="color:#ffffff">冰</b> │
       <b style="color:#ffffff">冰</b> 克 <b style="color:#7fe2fd">水</b> │
-      <b style="color:#7fe2fd">水</b> 克 <b style="color:#ff6b35">火</b>
+      <b style="color:#1d96fa">水</b> 克 <b style="color:#ff6b35">火</b>
     </p>
   </div>
 
@@ -289,15 +289,15 @@ const ELEM_KEYS = ['fire','wood','earth','thunder','ice','water'];
 const SPELLS = [
   // === LINE (1星) 单体法术 ===
   { id:'fire_line',    name:'火球术',     elem:'fire',    gesture:'LINE', cost:1, type:'projectile', dmg:2, range:3*UNIT, r:10, splash:true },
-  { id:'wood_line',    name:'藤蔓缠绕',   elem:'wood',    gesture:'LINE', cost:1, type:'instant', dmg:1, range:3*UNIT,rootT:4*60, fx:'bind' },
+  { id:'wood_line',    name:'藤蔓缠绕',   elem:'wood',    gesture:'LINE', cost:1, type:'instant', dmg:1, range:3*UNIT,rootT:4*60, bind:true },
   { id:'earth_line',   name:'碎石弹',   elem:'earth',   gesture:'LINE', cost:1, type:'projectile', dmg:2, range:3*UNIT, r:8, split:true },
   { id:'thunder_line', name:'晴天霹雳',     elem:'thunder', gesture:'LINE', cost:1, type:'zigzag',      dmg:2, len:3*UNIT },
   { id:'ice_line',     name:'冰锥术',     elem:'ice',     gesture:'LINE', cost:1, type:'projectile', dmg:2, range:3*UNIT, r:8, slow:true },
   { id:'water_line',   name:'龙王一喷',     elem:'water',   gesture:'LINE', cost:1, type:'line',        dmg:2, len:2*UNIT },
   // === CIRCLE (2星) 范围法术 ===
   { id:'fire_circle',  name:'朱雀扇',   elem:'fire',    gesture:'CIRCLE', cost:2, type:'fan',      dmg:4, radius:3*UNIT, angle:Math.PI*2/3 },
-  { id:'wood_circle',  name:'木灵召唤', elem:'wood',    gesture:'CIRCLE', cost:2, type:'summon',   spiritHp:20, dmg:2, dur:9999 },
-  { id:'earth_circle', name:'守护之墙',     elem:'earth',   gesture:'CIRCLE', cost:2, type:'wall',     size:1.5*UNIT, dur:60*60, wallHp:50 },
+  { id:'wood_circle',  name:'木灵召唤', elem:'wood',    gesture:'CIRCLE', cost:2, type:'summon',   spiritHp:20, dmg:2,},
+  { id:'earth_circle', name:'守护之墙',     elem:'earth',   gesture:'CIRCLE', cost:2, type:'wall',     size:1.5*UNIT, dur:9999, wallHp:50 },
   { id:'thunder_circle',name:'雷の呼吸·壹之型', elem:'thunder', gesture:'CIRCLE', cost:2, type:'chain',    dmg:3, range:3*UNIT, maxJumps:6 },
   { id:'ice_circle',   name:'千里冰封',     elem:'ice',     gesture:'CIRCLE', cost:2, type:'freeze',   radius:2*UNIT, dmg:3, freezeMon:6*60, freezeBoss:3*60 },
   { id:'water_circle', name:'春风化雨', elem:'water',   gesture:'CIRCLE', cost:2, type:'healzone', radius:2*UNIT, healRate:10, dur:5*60 },
@@ -344,19 +344,19 @@ const BOSS_INTERVAL = 3;
 const ENRAGE_COLOR = '#f50057'; // 狂暴阶段专属色（不暗示任何元素）
 const BOSS_TYPES = {
   fairy: {
-    name: '腐化妖精', hp: 60, spd: 1.0, dmg: 8, r: 30,
+    name: '堕落精灵', hp: 60, spd: 1.0, dmg: 6, r: 30, atkCD: 60, atkRange:6*UNIT,
     phases: [
-      { hpPct: 1.0,  weak: 'water',  resist: 'wood',   phaseName: '火',   elemMode: 'fire',    immune: '',   summon: 'firebug', summonCD: 360, spdMult: 1.0 },
-      { hpPct: 0.60, weak: 'earth',  resist: 'ice',   phaseName: '雷',   elemMode: 'thunder', immune: '',   summon: 'bat',     summonCD: 300, spdMult: 1.2 }, 
+      { hpPct: 1.0,  weak: 'water',  elemMode: 'fire',   resist: 'wood',  phaseName: '火',     immune: '',   summon: 'firebug', summonCD: 360, spdMult: 1.0 },
+      { hpPct: 0.60, weak: 'earth',  elemMode: 'thunder', resist: 'ice',   phaseName: '雷',   immune: '',   summon: 'bat',     summonCD: 300, spdMult: 1.2 }, 
       { hpPct: 0.20, weak: '',  resist: '',   phaseName: '狂暴',     elemMode: ['fire', 'thunder'],    immune: ['wood', 'ice'],   summon: 'spirit',  summonCD: 240, spdMult: 1.5, scatter: true },
     ],
   },
   golem: {
-    name: '深渊魔像', hp: 60, spd: 0.75, dmg: 8, r: 40,
+    name: '深渊魔像', hp: 60, spd: 0.75, dmg: 8, r: 40, atkCD: 80, atkRange:6*UNIT,
     phases: [
-      { hpPct: 1.0,  weak: 'thunder', resist: 'water', phaseName: '冰', elemMode: 'ice',    immune: '', summon: 'iceshard', summonCD: 360, spdMult: 1.0 },
-      { hpPct: 0.65, weak: 'ice',     resist: 'fire',  phaseName: '水', elemMode: 'water',  immune: '',  summon: 'slime',    summonCD: 300, spdMult: 1.2 },
-      { hpPct: 0.30, weak: '',        resist: '',      phaseName: '狂暴',   elemMode: ['ice', 'water'],    immune: ['water', 'fire'], summon: 'bat',      summonCD: 240, spdMult: 1.5, scatter: true },
+      { hpPct: 1.0,  weak: 'thunder',  elemMode: 'ice',   resist: 'water', phaseName: '冰', immune: '', summon: 'iceshard', summonCD: 360, spdMult: 1.0 },
+      { hpPct: 0.65, weak: 'ice',   elemMode: 'water',    resist: 'fire',  phaseName: '水', immune: '',  summon: 'slime',    summonCD: 300, spdMult: 1.2 },
+      { hpPct: 0.30, weak: '',        resist: '',      phaseName: '狂暴',   elemMode: ['ice', 'water'],    immune: ['water', 'fire'], summon: 'wolf',   summonCD: 240, spdMult: 1.5, atkRange:3*UNIT, },
     ],
   },
 };
@@ -686,15 +686,16 @@ function tryCastSpell(gestureType) {
     }
     G.materials[G.selectedMat] -= spell.cost;
     G.unsaved = true;
-    castEnhanceSpell(spell);
-    showFeedback(spell.name + '！', ELEMENTS[spell.elem].color);
-    return;
+    if (castSpell(spell)) {
+      showFeedback(spell.name + '！', ELEMENTS[spell.elem].color);
+      ddParticles(G.player.x, G.player.y, ELEMENTS[spell.elem].color, 6, 4, 30);
+    }
   }
 
   // Normal 1-star / 2-star spells
   const spell = SPELL_MAP[key];
   if (!spell) {
-    showFeedback('未知法术', '#888');
+    showFeedback('法术不存在', '#888');
     return;
   }
   if (G.materials[G.selectedMat] < spell.cost) {
@@ -744,6 +745,7 @@ function castSpell(spell) {
     } else {
       showFeedback('范围内无目标', '#888');
       G.materials['wood'] += spell.cost;
+      return false;
     }
   } else if (spell.type === 'projectile') {
     // 碎石/火球/冰锥: track nearest enemy then fly straight
@@ -766,7 +768,7 @@ function castSpell(spell) {
       x:p.x, y:p.y, vx:Math.cos(ang)*6, vy:Math.sin(ang)*6,
       dmg:spell.dmg, elem:spell.elem, r: spell.elem === 'fire' ? spell.r * getBuffFireRadiusMult() : spell.r,
       life: isEarth ? 300 : 100,
-      range: isEarth ? null : spell.range, traveled:0, fx:spell.fx||null,
+      range: isEarth ? null : spell.range, traveled:0, bind:spell.bind||false,
       hitSet:new Set(), split: spell.split || false, splitDir: ang,
       slow: spell.slow || false, splash: spell.splash || false,
     });
@@ -855,6 +857,7 @@ function castSpell(spell) {
     } else {
       showFeedback('范围内无目标', '#888');
       G.materials['wood'] += spell.cost;
+      return false;
     }
   } else if (spell.type === 'healzone') {
     // 水：圆形治疗领域，半径2单位，5s内每秒回复10血
@@ -888,7 +891,7 @@ function castSpell(spell) {
     const Hp = spell.spiritHp * getBuffWoodMult();
     G.treeSpirits.push({
       x: p.x + Math.cos(p.facing)*20, y: p.y + Math.sin(p.facing)*20, dmg:spell.dmg,
-      vx:0, vy:0, r:18, hp:Hp, maxHp:Hp, atkTimer:0, hitFlash:0, atkFx:0,
+      vx:0, vy:0, r:16, hp:Hp, maxHp:20, atkTimer:0, hitFlash:0, atkFx:0,
     });
     addParticles(p.x, p.y, '#66bb6a', 25, 4, 40);
   } else if (spell.type === 'chain') {
@@ -945,6 +948,7 @@ function castSpell(spell) {
     G.shake = 3;
     if (hitAny) addProf('ice');
   }
+  return true;
 }
 
 // ======================== 强化法术 Buff 系统 ========================
@@ -1361,8 +1365,8 @@ function updateEnemies() {
     } else if (t.ai === 'swarm') {
       e.swarmAngle += 0.05;
       const ang = e.facing + Math.sin(e.swarmAngle)*0.6;
-      e.vx = lerp(e.vx, Math.cos(ang)*spd, 0.2);
-      e.vy = lerp(e.vy, Math.sin(ang)*spd, 0.2);
+      e.vx = lerp(e.vx, Math.cos(ang)*spd, 0.15);
+      e.vy = lerp(e.vy, Math.sin(ang)*spd, 0.15);
     } else if (t.ai === 'ranged') {
       if (d > t.atkRange) {
         e.vx = lerp(e.vx, Math.cos(e.facing)*spd, 0.1);
@@ -1409,7 +1413,7 @@ function updateEnemies() {
 
     // Collision with tree spirits  碰撞击木灵
     for (const s of G.treeSpirits) {
-      if (dist(e, s) < e.r + s.r && s.hitFlash <= 0) {
+      if (dist(e, s) < e.r && s.hitFlash <= 0) {
         const dmg = t.dmg;
         s.hp -= dmg;
         s.hitFlash = 30;
@@ -1439,6 +1443,159 @@ function updateEnemies() {
     if (e.hp <= 0) {
       G.enemies.splice(i, 1);
     }
+  }
+}
+
+function updateBoss() {
+  const b = G.boss;
+  if (!b) return;
+  const p = G.player;
+  const def = BOSS_TYPES[b.type];
+  const phases = def.phases;
+  const hpPct = b.hp / b.maxHp;
+
+  // Phase transition
+  for (let i = phases.length - 1; i >= 0; i--) {
+    if (hpPct <= phases[i].hpPct && b.phase < i) {
+      b.phase = i;
+      const ph = phases[i];
+      b.phaseName = ph.phaseName;
+      b.weak = ph.weak; b.resist = ph.resist;
+      b.immune = ph.immune; b.elemMode = ph.elemMode;
+      if (i === phases.length - 1) { // 狂暴：初始弱点=首个非免疫元素，之后每10s轮换
+        const pool = ELEM_KEYS.filter(k => !(Array.isArray(ph.immune) ? ph.immune.includes(k) : ph.immune === k));
+        b.weak = pool[0];
+        b.enrageWeakT = 600;
+      }
+      b.summonCD = ph.summonCD; b.summonTimer = ph.summonCD;
+      showFeedback('Boss进入：' + ph.phaseName + '！', '#ff6b35');
+      G.shake = 10;
+      addParticles(b.x, b.y, '#ff6b35', 30, 6, 50);
+      break;
+    }
+  }
+  const phase = phases[b.phase];
+
+  // 狂暴阶段：克制元素每10s轮换（免疫固定、无抗性）
+  if (b.phase === phases.length - 1) {
+    b.enrageWeakT--;
+    if (b.enrageWeakT <= 0) {
+      b.enrageWeakT = 600;
+      const pool = ELEM_KEYS.filter(k => !(Array.isArray(b.immune) ? b.immune.includes(k) : b.immune === k));
+      const idx = pool.indexOf(b.weak);
+      b.weak = pool[(idx + 1) % pool.length];
+      b.resist = '';
+      showFeedback('弱点切换：' + ELEMENTS[b.weak].name + '！', ENRAGE_COLOR);
+      addParticles(b.x, b.y, ENRAGE_COLOR, 20, 4, 35);
+    }
+  }
+
+  // Freeze check
+  if (b.freezeT > 0) { b.freezeT--; b.hitFlash = Math.max(b.hitFlash, 2); return; }
+
+  // Movement
+  b.moveT--;
+  if (b.moveT <= 0) {
+    b.targetX = clamp(p.x + rand(-150, 150), 60, W - 60);
+    b.targetY = clamp(p.y + rand(-100, 100), 60, H - 60);
+    b.moveT = 120;
+  }
+  const spdMult = phase.spdMult || 1;
+  if (b.slowStacks > 0) { 
+    if (b.slowDecayT > 0) b.slowDecayT--; 
+    else { b.slowStacks--; b.slowDecayT = SLOW_DECAY; } 
+  }
+  const spd = Math.max(0, def.spd * spdMult - ICE_SLOW * getBuffIceMult() * (b.slowStacks||0));
+  const dx = b.targetX - b.x, dy = b.targetY - b.y;
+  const d = Math.hypot(dx, dy);
+  if (d > b.r) {
+    b.vx = lerp(b.vx, (dx / d) * spd, 0.15);
+    b.vy = lerp(b.vy, (dy / d) * spd, 0.15);
+  }
+  b.x = clamp(b.x + b.vx, b.r, W - b.r);
+  b.y = clamp(b.y + b.vy, b.r, H - b.r);
+  b.facing = Math.atan2(p.y - b.y, p.x - b.x);
+  if (b.hitFlash > 0) b.hitFlash--;
+
+  // Summon minions
+  b.summonTimer--;
+  if (b.summonTimer <= 0) {
+    b.summonTimer = b.summonCD;
+    const summonType = phase.summon;
+    for (let i = 0; i < 2; i++) {
+      const ang = rand(0, TAU);
+      const sx = b.x + Math.cos(ang) * 50, sy = b.y + Math.sin(ang) * 50;
+      const t = ENEMY_TYPES[summonType];
+      const hpBonus = Math.floor((G.wave - 1) / 3) * (t.elite ? 2 : 1);
+      G.enemies.push({
+        type: summonType, x: sx, y: sy, vx: 0, vy: 0, r: t.r,
+        hp: t.hp + hpBonus, maxHp: t.hp + hpBonus,  dmg: t.dmg, spd: t.spd, 
+        facing: 0, hitFlash: 0, slowStacks: 0, slowDecayT: 0, freezeT: 0, rootT: 0,
+        atkCD: t.atkCD || 0, atkRange: t.atkRange || 0, chargeT: 0, swarmAngle: rand(0, TAU),
+      });
+      addParticles(sx, sy, ELEMENTS[t.elem].color, 8, 3, 25);
+    }
+    showFeedback('Boss召唤了' + ENEMY_TYPES[summonType].name + '！', '#ff9800');
+  }
+
+  // Boss ranged attack (scatter 狂暴)
+  b.atkCD--;
+  if (b.atkCD <= 0) {
+    b.atkCD = phase.scatter ? 60 : 80;
+    const ang = b.facing;
+    if (phase.scatter) {
+      for (const da of [-0.4, 0, 0.4]) {
+        G.projectiles.push({
+          x: b.x, y: b.y, vx: Math.cos(ang+da)*3, vy: Math.sin(ang+da)*3,
+          dmg: 8, elem: b.elemMode, r: 8, life: 180, enemy: true, hitSet: new Set(),
+        });
+      }
+    } else {
+      G.projectiles.push({
+        x: b.x, y: b.y, vx: Math.cos(ang)*3, vy: Math.sin(ang)*3,
+        dmg: 8, elem: b.elemMode, r: 8, life: 180, enemy: true, hitSet: new Set(),
+      });
+    }
+  }
+
+  for (const w of G.walls) {
+      const hw = w.size/2;
+      if (b.x > w.x-hw-b.r && b.x < w.x+hw+b.r && b.y > w.y-hw-b.r && b.y < w.y+hw+b.r) {
+        w.hp -= 8;
+        addParticles(b.x, b.y, '#fdd835', 6, 4, 15);
+        const dx = b.x - w.x, dy = b.y - w.y; 
+        const ang = Math.atan2(dy, dx);
+        if (Math.abs(dx) > Math.abs(dy)) {  // 弹反
+          b.x = dx > 0 ? w.x+hw+b.r : w.x-hw-b.r;
+          b.vx = -b.vx + Math.cos(ang)*5*spd;
+        } else {
+          b.y = dy > 0 ? w.y+hw+b.r : w.y-hw-b.r;
+          b.vy = -b.vy + Math.sin(ang)*5*spd;
+        }
+      }
+    }
+  // Contact damage to player 
+  if (dist(b, p) < b.r + p.r && p.hitFlash <= 0) {
+    let dmg = 8;
+    if (p.shield > 0) { const a = Math.min(p.shield, dmg); p.shield -= a; dmg -= a; }
+    p.hp -= dmg; p.hitFlash = 30; G.shake = 8;
+    addFloatText(p.x, p.y-p.r-10, '-' + dmg, '#f44336');
+    const ang = Math.atan2(b.y - p.y, b.x - p.x);
+    p.vx -= Math.cos(ang)* 3; 
+    p.vy -= Math.sin(ang)* 3;
+  }
+  // Boss collision with tree spirits (doesn't target, but damages on contact) 碰撞击木灵
+  for (const s of G.treeSpirits) {
+    if (dist(b, s) < b.r && s.hitFlash <= 0) {
+      s.hp -= 8;
+      s.hitFlash = 30;
+      const ang = Math.atan2(s.y - b.y, s.x - b.x);
+      b.vx -= Math.cos(ang) * 4; b.vy -= Math.sin(ang) * 4;
+    }
+  }
+  // Boss death
+  if (b.hp <= 0) {
+    onBossDeath();
   }
 }
 
@@ -1702,160 +1859,6 @@ function updateWaves() {
     }
   } else if (G.enemies.length === 0) {
     waveComplete();
-  }
-}
-
-function updateBoss() {
-  const b = G.boss;
-  if (!b) return;
-  const p = G.player;
-  const def = BOSS_TYPES[b.type];
-  const phases = def.phases;
-  const hpPct = b.hp / b.maxHp;
-
-  // Phase transition
-  for (let i = phases.length - 1; i >= 0; i--) {
-    if (hpPct <= phases[i].hpPct && b.phase < i) {
-      b.phase = i;
-      const ph = phases[i];
-      b.phaseName = ph.phaseName;
-      b.weak = ph.weak; b.resist = ph.resist;
-      b.immune = ph.immune; b.elemMode = ph.elemMode;
-      if (i === phases.length - 1) { // 狂暴：初始弱点=首个非免疫元素，之后每10s轮换
-        const pool = ELEM_KEYS.filter(k => !(Array.isArray(ph.immune) ? ph.immune.includes(k) : ph.immune === k));
-        b.weak = pool[0];
-        b.enrageWeakT = 600;
-      }
-      b.summonCD = ph.summonCD; b.summonTimer = ph.summonCD;
-      showFeedback('Boss进入：' + ph.phaseName + '！', '#ff6b35');
-      G.shake = 10;
-      addParticles(b.x, b.y, '#ff6b35', 30, 6, 50);
-      break;
-    }
-  }
-  const phase = phases[b.phase];
-
-  // 狂暴阶段：克制元素每10s轮换（免疫固定、无抗性）
-  if (b.phase === phases.length - 1) {
-    b.enrageWeakT--;
-    if (b.enrageWeakT <= 0) {
-      b.enrageWeakT = 600;
-      const pool = ELEM_KEYS.filter(k => !(Array.isArray(b.immune) ? b.immune.includes(k) : b.immune === k));
-      const idx = pool.indexOf(b.weak);
-      b.weak = pool[(idx + 1) % pool.length];
-      b.resist = '';
-      showFeedback('弱点切换：' + ELEMENTS[b.weak].name + '！', ENRAGE_COLOR);
-      addParticles(b.x, b.y, ENRAGE_COLOR, 20, 4, 35);
-    }
-  }
-
-  // Freeze check
-  if (b.freezeT > 0) { b.freezeT--; b.hitFlash = Math.max(b.hitFlash, 2); return; }
-
-  // Movement
-  b.moveT--;
-  if (b.moveT <= 0) {
-    b.targetX = clamp(p.x + rand(-150, 150), 60, W - 60);
-    b.targetY = clamp(p.y + rand(-100, 100), 60, H - 60);
-    b.moveT = 120;
-  }
-  const spdMult = phase.spdMult || 1;
-  if (b.slowStacks > 0) { 
-    if (b.slowDecayT > 0) b.slowDecayT--; 
-    else { b.slowStacks--; b.slowDecayT = SLOW_DECAY; } 
-  }
-  const spd = Math.max(0, def.spd * spdMult - ICE_SLOW * getBuffIceMult() * (b.slowStacks||0));
-  const dx = b.targetX - b.x, dy = b.targetY - b.y;
-  const d = Math.hypot(dx, dy);
-  if (d > b.r) {
-    b.vx = lerp(b.vx, (dx / d) * spd, 0.1);
-    b.vy = lerp(b.vy, (dy / d) * spd, 0.1);
-  }
-  b.x = clamp(b.x + b.vx, b.r, W - b.r);
-  b.y = clamp(b.y + b.vy, b.r, H - b.r);
-  b.facing = Math.atan2(p.y - b.y, p.x - b.x);
-  if (b.hitFlash > 0) b.hitFlash--;
-
-  // Summon minions
-  b.summonTimer--;
-  if (b.summonTimer <= 0) {
-    b.summonTimer = b.summonCD;
-    const summonType = phase.summon;
-    for (let i = 0; i < 2; i++) {
-      const ang = rand(0, TAU);
-      const sx = b.x + Math.cos(ang) * 50, sy = b.y + Math.sin(ang) * 50;
-      const t = ENEMY_TYPES[summonType];
-      const hpBonus = Math.floor((G.wave - 1) / 3) * (t.elite ? 2 : 1);
-      G.enemies.push({
-        type: summonType, x: sx, y: sy, vx: 0, vy: 0, r: t.r,
-        hp: t.hp + hpBonus, maxHp: t.hp + hpBonus,
-        facing: 0, hitFlash: 0, slowStacks: 0, slowDecayT: 0, freezeT: 0, rootT: 0,
-        atkCD: t.atkCD || 0, chargeT: 0, swarmAngle: rand(0, TAU),
-      });
-      addParticles(sx, sy, ELEMENTS[t.elem].color, 8, 3, 25);
-    }
-    showFeedback('Boss召唤了' + ENEMY_TYPES[summonType].name + '！', '#ff9800');
-  }
-
-  // Boss ranged attack (scatter 狂暴)
-  b.atkCD--;
-  if (b.atkCD <= 0) {
-    b.atkCD = phase.scatter ? 60 : 80;
-    const ang = b.facing;
-    if (phase.scatter) {
-      for (const da of [-0.4, 0, 0.4]) {
-        G.projectiles.push({
-          x: b.x, y: b.y, vx: Math.cos(ang+da)*3, vy: Math.sin(ang+da)*3,
-          dmg: 8, elem: b.elemMode, r: 8, life: 180, enemy: true, hitSet: new Set(),
-        });
-      }
-    } else {
-      G.projectiles.push({
-        x: b.x, y: b.y, vx: Math.cos(ang)*3, vy: Math.sin(ang)*3,
-        dmg: 8, elem: b.elemMode, r: 8, life: 180, enemy: true, hitSet: new Set(),
-      });
-    }
-  }
-
-  for (const w of G.walls) {
-      const hw = w.size/2;
-      if (b.x > w.x-hw-b.r && b.x < w.x+hw+b.r && b.y > w.y-hw-b.r && b.y < w.y+hw+b.r) {
-        w.hp -= 8;
-        addParticles(b.x, b.y, '#fdd835', 6, 4, 15);
-        const dx = b.x - w.x, dy = b.y - w.y; 
-        const ang = Math.atan2(dy, dx);
-        if (Math.abs(dx) > Math.abs(dy)) {  // 弹反
-          b.x = dx > 0 ? w.x+hw+b.r : w.x-hw-b.r;
-          b.vx = -b.vx + Math.cos(ang)*5*spd;
-        } else {
-          b.y = dy > 0 ? w.y+hw+b.r : w.y-hw-b.r;
-          b.vy = -b.vy + Math.sin(ang)*5*spd;
-        }
-      }
-    }
-  // Contact damage to player 
-  if (dist(b, p) < b.r + p.r && p.hitFlash <= 0) {
-    let dmg = 8;
-    if (p.shield > 0) { const a = Math.min(p.shield, dmg); p.shield -= a; dmg -= a; }
-    p.hp -= dmg; p.hitFlash = 30; G.shake = 8;
-    addFloatText(p.x, p.y-p.r-10, '-' + dmg, '#f44336');
-    const ang = Math.atan2(b.y - p.y, b.x - p.x);
-    p.vx -= Math.cos(ang)* 3; 
-    p.vy -= Math.sin(ang)* 3;
-  }
-  // Boss collision with tree spirits (doesn't target, but damages on contact) 碰撞击木灵
-  for (const s of G.treeSpirits) {
-    if (dist(b, s) < b.r + s.r && s.hitFlash <= 0) {
-      s.hp -= 8;
-      s.hitFlash = 30;
-      const ang = Math.atan2(s.y - b.y, s.x - b.x);
-      b.vx -= Math.cos(ang) * 4; b.vy -= Math.sin(ang) * 4;
-    }
-  }
-
-  // Boss death
-  if (b.hp <= 0) {
-    onBossDeath();
   }
 }
 
