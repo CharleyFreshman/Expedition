@@ -1592,7 +1592,7 @@ function updateBoss() {
     p.vx -= Math.cos(ang)* 3; 
     p.vy -= Math.sin(ang)* 3;
   }
-  // Boss collision with tree spirits (doesn't target, but damages on contact) 碰撞击木灵
+  // Boss collision (doesn't target, but damages on contact) 碰撞击木灵
   for (const s of G.treeSpirits) {
     if (dist(b, s) < b.r && s.hitFlash <= 0) {
       s.hp -= 8;
@@ -1660,7 +1660,7 @@ function updateProjectiles() {
         pr.hitSet.add(G.boss);
         damageBoss(pr.dmg, pr.elem);
         if (pr.splash) {
-          // 以Boss为中心，G.boss.r + 2*pr.r 为半径，范围内敌人受到同等伤害
+          // 以Boss为中心，G.boss.r + pr.r 为半径，范围内敌人受到同等伤害
           for (const e2 of G.enemies) {
             if (pr.hitSet.has(e2)) continue;
             if (dist(G.boss, e2) - e2.r < G.boss.r + pr.r) {
@@ -1821,18 +1821,18 @@ function updateTreeSpirits() {  // 更新木灵
     if (s.atkFx > 0) s.atkFx--;
     s.atkTimer++;
     // 每2秒对1单位内敌人造成2伤害
-    if (s.atkTimer >= 120) {
+    if (s.atkTimer >= 60) {
       s.atkTimer = 0;
-      s.atkFx = 30; // 攻击特效持续
+      s.atkFx = 20; // 攻击特效持续
       for (const e of G.enemies) {
         if (dist(e, s) < UNIT + e.r) {
-          damageEnemy(e, 2, 'wood');
+          damageEnemy(e, 1, 'wood');
           addParticles(e.x, e.y, '#66bb6a', 5, 3, 20);
           addProf('wood');
         }
       }
       if (G.boss && dist(G.boss, s) < UNIT + G.boss.r) {
-        damageBoss(2, 'wood');
+        damageBoss(1, 'wood');
         addProf('wood');
       }
     }
