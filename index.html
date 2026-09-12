@@ -231,7 +231,7 @@ button:hover{transform:scale(1.05)}
 
     <h3>2星法术（圆形·范围）</h3>
     <p>
-      <b style="color:#ff6b35">火</b> 扇形 大范围伤害<br>
+      <b style="color:#ff6b35">火</b> 扇形 大范围高伤害<br>
       <b style="color:#6ff863">木</b> 召唤木灵 嘲讽输出<br>
       <b style="color:#fdd835">土</b> 城墙防御 弹反怪物<br>
       <b style="color:#dd4bf7">雷</b> 追踪目标 连锁反应<br>
@@ -633,7 +633,7 @@ function spawnEnemy(type) {
 function spawnCrystal() {
   const dropElem = pick(ELEM_KEYS);
   G.crystals.push({
-    x: rand(60, W-60), y: rand(60, H-60), elem:dropElem, r:12, pulse:0, life:600
+    x: rand(60, W-60), y: rand(60, H-60), elem:dropElem, r:10, pulse:0
   });
 }
 
@@ -1113,8 +1113,7 @@ function onEnemyDeath(e) {
   G.score += Math.round(t.hp * 2);
   addParticles(e.x, e.y, ELEMENTS[t.elem].color, 20, 5, 40);
   if (t.elite) {
-    const count = G.boss ? 2 : 3;
-    for (let i = 0; i < count; i++) spawnCrystal();
+    for (let i = 0; i < 2; i++) spawnCrystal();
   } else if (Math.random() < (G.boss ? 0.35 : 0.5)) {
     spawnCrystal();
   }
@@ -1743,7 +1742,7 @@ function updateCrystals() {
   for (let i = G.crystals.length-1; i >= 0; i--) {
     const c = G.crystals[i];
     c.pulse += 0.08;
-    if (dist(c, p) < c.r + p.r) {
+    if (dist(c, p) < c.r + 2 * p.r) {
       G.materials[c.elem] = (G.materials[c.elem]||0) + 3;
       addFloatText(c.x, c.y, ELEMENTS[c.elem].name+'+3', ELEMENTS[c.elem].color);
       addParticles(c.x, c.y, ELEMENTS[c.elem].color, 10, 3, 25);
@@ -1819,18 +1818,18 @@ function updateTreeSpirits() {  // 更新木灵
     if (s.atkFx > 0) s.atkFx--;
     s.atkTimer++;
     // 每2秒对1单位内敌人造成2伤害
-    if (s.atkTimer >= 60) {
+    if (s.atkTimer >= 120) {
       s.atkTimer = 0;
       s.atkFx = 30; // 攻击特效持续
       for (const e of G.enemies) {
         if (dist(e, s) < UNIT + e.r) {
-          damageEnemy(e, 1, 'wood');
+          damageEnemy(e, 2, 'wood');
           addParticles(e.x, e.y, '#66bb6a', 5, 3, 20);
           addProf('wood');
         }
       }
       if (G.boss && dist(G.boss, s) < UNIT + G.boss.r) {
-        damageBoss(1, 'wood');
+        damageBoss(2, 'wood');
         addProf('wood');
       }
     }
@@ -1886,13 +1885,13 @@ function onBossDeath() {
   addParticles(b.x, b.y, '#ffeb3b', 40, 6, 50);
   G.shake = 20;
   // Drop random crystals
-  for (let i = 0; i < 6; i++) {
+  for (let i = 0; i < 4; i++) {
     spawnCrystal();
   }
   // Spawn evacuation point
   spawnHealPack();
   G.evacPoint = { x: W - 60, y: H / 2, r: 30, pulse: 0 };
-  showFeedback('Boss被击败！前往右侧光圈撤离(可选)', '#4fc3f7');
+  showFeedback('Boss被击败！可前往光圈撤离', '#4fc3f7');
   G.boss = null;
   G.waveActive = false;
   G.waveCD = 1200; // 撤离时间
