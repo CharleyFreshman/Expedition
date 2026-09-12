@@ -296,22 +296,22 @@ const SPELLS = [
   { id:'water_line',   name:'龙王一喷',     elem:'water',   gesture:'LINE', cost:1, type:'line',        dmg:2, len:2*UNIT },
   // === CIRCLE (2星) 范围法术 ===
   { id:'fire_circle',  name:'朱雀扇',   elem:'fire',    gesture:'CIRCLE', cost:2, type:'fan',      dmg:4, radius:3*UNIT, angle:Math.PI*2/3 },
-  { id:'wood_circle',  name:'木灵召唤', elem:'wood',    gesture:'CIRCLE', cost:2, type:'summon',   spiritHp:20, dmg:2,},
-  { id:'earth_circle', name:'守护之墙',     elem:'earth',   gesture:'CIRCLE', cost:2, type:'wall',     size:1.5*UNIT, dur:9999, wallHp:50 },
+  { id:'wood_circle',  name:'木灵召唤', elem:'wood',    gesture:'CIRCLE', cost:2, type:'summon',   spiritHp:20, dmg:1, dur:9999 },
+  { id:'earth_circle', name:'守护之墙',     elem:'earth',   gesture:'CIRCLE', cost:2, type:'wall',     size:1*UNIT, wallHp:50, dur:9999 },
   { id:'thunder_circle',name:'雷の呼吸·壹之型', elem:'thunder', gesture:'CIRCLE', cost:2, type:'chain',    dmg:3, range:3*UNIT, maxJumps:6 },
-  { id:'ice_circle',   name:'千里冰封',     elem:'ice',     gesture:'CIRCLE', cost:2, type:'freeze',   radius:2*UNIT, dmg:3, freezeMon:6*60, freezeBoss:3*60 },
-  { id:'water_circle', name:'春风化雨', elem:'water',   gesture:'CIRCLE', cost:2, type:'healzone', radius:2*UNIT, healRate:10, dur:5*60 },
+  { id:'ice_circle',   name:'千里冰封',     elem:'ice',     gesture:'CIRCLE', cost:2, type:'freeze',   dmg:2, radius:2*UNIT, freezeMon:6*60, freezeBoss:3*60 },
+  { id:'water_circle', name:'春风化雨', elem:'water',   gesture:'CIRCLE', cost:2, type:'healzone', radius:1.5*UNIT, healRate:10, dur:5*60 },
 ];
 const SPELL_MAP = {};
 SPELLS.forEach(s => { SPELL_MAP[s.elem + '|' + s.gesture] = s; });
 
 // === 3星(CHEVRON) 强化法术 === 消耗3材料, 10s持续, 5s冷却, 可叠加
 const ENHANCE_SPELLS = [
-  { id:'fire_chevron',    name:'炉火纯青', elem:'fire',    gesture:'CHEVRON', cost:3, dur:600, cd:300, desc:'火伤+50% 弹径+25%' },
-  { id:'wood_chevron',    name:'万物生',   elem:'wood',    gesture:'CHEVRON', cost:3, dur:600, cd:300, desc:'木伤+50% 木灵全愈' },
-  { id:'earth_chevron',   name:'不动如山', elem:'earth',   gesture:'CHEVRON', cost:3, dur:600, cd:300, desc:'土伤+50% 城墙血+50%' },
-  { id:'thunder_chevron', name:'雷霆万钧', elem:'thunder', gesture:'CHEVRON', cost:3, dur:600, cd:300, desc:'雷伤+50% 跳数+25%' },
-  { id:'ice_chevron',     name:'寒霜降',   elem:'ice',     gesture:'CHEVRON', cost:3, dur:600, cd:300, desc:'冰伤+50% 减速+50%' },
+  { id:'fire_chevron',    name:'炉火纯青', elem:'fire',    gesture:'CHEVRON', cost:3, dur:600, cd:300, desc:'火伤+50% 范围+50%' },
+  { id:'wood_chevron',    name:'万物生',   elem:'wood',    gesture:'CHEVRON', cost:3, dur:600, cd:300, desc:'木伤+50% 强化木灵' },
+  { id:'earth_chevron',   name:'不动如山', elem:'earth',   gesture:'CHEVRON', cost:3, dur:600, cd:300, desc:'土伤+50% 城墙+50%' },
+  { id:'thunder_chevron', name:'雷霆万钧', elem:'thunder', gesture:'CHEVRON', cost:3, dur:600, cd:300, desc:'雷伤+50% 跳数+50%' },
+  { id:'ice_chevron',     name:'寒霜降',   elem:'ice',     gesture:'CHEVRON', cost:3, dur:600, cd:300, desc:'冰伤+50% 控制+50%' },
   { id:'water_chevron',   name:'川流不息', elem:'water',   gesture:'CHEVRON', cost:3, dur:600, cd:300, desc:'水伤+50% 治疗+50%' },
 ];
 const ENHANCE_MAP = {};
@@ -872,7 +872,7 @@ function castSpell(spell) {
     G.healZones.push({x:p.x, y:p.y, r:spell.radius, healRate:Math.round(spell.healRate * getBuffWaterMult()), timer:0, life:spell.dur});
     addParticles(p.x, p.y, '#42a5f5', 20, 3, 40);
   } else if (spell.type === 'wall') {
-    // 土：正方形城墙，边长2单位
+    // 土：正方形城墙
     const wallHp = spell.wallHp * getBuffWallHpMult();
     G.walls.push({x:p.x, y:p.y, size:spell.size, hp:wallHp, maxHp:wallHp, life:spell.dur});
     // 推斥敌人
@@ -880,16 +880,14 @@ function castSpell(spell) {
       const d = dist(e, {x:p.x, y:p.y});
       if (d < spell.size/2 + e.r + 10) {
         const ang = Math.atan2(e.y-p.y, e.x-p.x);
-        e.vx += Math.cos(ang)*8; e.vy += Math.sin(ang)*8;
-        damageEnemy(e, 1, 'earth');
+        e.vx += Math.cos(ang)*10; e.vy += Math.sin(ang)*10;
       }
     }
     if (G.boss) {
       const d = dist(G.boss, {x:p.x, y:p.y});
       if (d < spell.size/2 + G.boss.r + 10) {
         const ang = Math.atan2(G.boss.y-p.y, G.boss.x-p.x);
-        G.boss.vx += Math.cos(ang)*4; G.boss.vy += Math.sin(ang)*4;
-        damageBoss(1, 'earth');
+        G.boss.vx += Math.cos(ang)*5; G.boss.vy += Math.sin(ang)*5;
       }
     }
     G.shake = 4;
@@ -899,7 +897,7 @@ function castSpell(spell) {
     const Hp = spell.spiritHp * getBuffWoodMult();
     G.treeSpirits.push({
       x: p.x + Math.cos(p.facing)*20, y: p.y + Math.sin(p.facing)*20, dmg:spell.dmg,
-      vx:0, vy:0, r:16, hp:Hp, maxHp:20, atkTimer:0, hitFlash:0, atkFx:0,
+      vx:0, vy:0, r:14, hp:Hp, maxHp:20, atkTimer:0, hitFlash:0, atkFx:0,
     });
     addParticles(p.x, p.y, '#66bb6a', 25, 4, 40);
   } else if (spell.type === 'chain') {
@@ -925,6 +923,7 @@ function castSpell(spell) {
       if (near === G.boss) damageBoss(spell.dmg, 'thunder');
       else damageEnemy(near, spell.dmg, 'thunder');
       from = {x:near.x, y:near.y};
+      addProf('thunder');
     }
     if (targets.length > 0) {
       G.lineEffects.push({type:'chain', segs:targets, elem:'thunder', life:45, color:ELEMENTS.thunder.color});
@@ -933,7 +932,6 @@ function castSpell(spell) {
         addParticles(t.x2, t.y2, '#e040fb', 4, 3, 20);
       }
       G.shake = 8;
-      addProf('thunder');
     }
   } else if (spell.type === 'freeze') {
     // 冰：冰冻半径2单位内小怪6s/Boss 3s，造成3伤害
@@ -1349,6 +1347,7 @@ function updateEnemies() {
       continue;
     }
     const spd = Math.max(0, t.spd - ICE_SLOW * buffIce * (e.slowStacks||0));
+    const dmg = t.dmg;
     const d = Math.hypot(p.x-e.x, p.y-e.y);
     // Taunt: target nearest tree spirit if within 2 units
     let target = p;
@@ -1405,8 +1404,8 @@ function updateEnemies() {
       if (e.x > w.x-hw-e.r && e.x < w.x+hw+e.r && e.y > w.y-hw-e.r && e.y < w.y+hw+e.r) {
         const dx = e.x - w.x, dy = e.y - w.y;
         const ang = Math.atan2(dy, dx);
-        const dmg = t.dmg;
         w.hp -= dmg;
+        damageEnemy(e, 1, 'earth');
         if (Math.abs(dx) > Math.abs(dy)) {        // bounce effect
           e.x = dx > 0 ? w.x+hw+e.r : w.x-hw-e.r;
           e.vx = -2*e.vx + Math.cos(ang)*10;
@@ -1422,7 +1421,6 @@ function updateEnemies() {
     // Collision with tree spirits  碰撞击木灵
     for (const s of G.treeSpirits) {
       if (dist(e, s) < e.r && s.hitFlash <= 0) {
-        const dmg = t.dmg;
         s.hp -= dmg;
         s.hitFlash = 30;
         const ang = Math.atan2(s.y-e.y, s.x-e.x);
@@ -1433,7 +1431,6 @@ function updateEnemies() {
     // Collision with player
     if (target === p && dist(e, p) < e.r + p.r) {
       if (p.hitFlash <= 0) {
-        const dmg = t.dmg;
         if (p.shield > 0) {
           const absorbed = Math.min(p.shield, dmg);
           p.shield -= absorbed; dmg -= absorbed;
@@ -1570,6 +1567,7 @@ function updateBoss() {
       const hw = w.size/2;
       if (b.x > w.x-hw-b.r && b.x < w.x+hw+b.r && b.y > w.y-hw-b.r && b.y < w.y+hw+b.r) {
         w.hp -= 8;
+        damageBoss(1,'earth');
         addParticles(b.x, b.y, '#fdd835', 6, 4, 15);
         const dx = b.x - w.x, dy = b.y - w.y; 
         const ang = Math.atan2(dy, dx);
@@ -1823,7 +1821,7 @@ function updateTreeSpirits() {  // 更新木灵
     // 每2秒对1单位内敌人造成2伤害
     if (s.atkTimer >= 60) {
       s.atkTimer = 0;
-      s.atkFx = 20; // 攻击特效持续
+      s.atkFx = 30; // 攻击特效持续
       for (const e of G.enemies) {
         if (dist(e, s) < UNIT + e.r) {
           damageEnemy(e, 1, 'wood');
