@@ -739,7 +739,7 @@ function castSpell(spell) {
       const d = Math.hypot(G.boss.x-p.x, G.boss.y-p.y);
       if (d < md) target = G.boss;
     }
-    if (target) {
+    if (target && target.rootT === 0) {
       G.lineEffects.push({type:'magicCircle', x:target.x, y:target.y, r:target.r+8, elem:spell.elem, life:30, color:ELEMENTS[spell.elem].color});
       if (target === G.boss) {
         damageBoss(spell.dmg, 'wood');  // 无法束缚boss
@@ -1379,8 +1379,8 @@ function updateEnemies() {
         e.vx = lerp(e.vx, Math.cos(e.facing)*spd, 0.1);
         e.vy = lerp(e.vy, Math.sin(e.facing)*spd, 0.1);
       } else if (d < t.atkRange*0.5) {
-        e.vx = lerp(e.vx, -Math.cos(e.facing)*spd, 0.1);
-        e.vy = lerp(e.vy, -Math.sin(e.facing)*spd, 0.1);
+        e.vx = lerp(e.vx, -Math.cos(e.facing)*spd, 0.15);
+        e.vy = lerp(e.vy, -Math.sin(e.facing)*spd, 0.15);
       } else {
         e.vx *= 0.9; e.vy *= 0.9;
       }
