@@ -1109,12 +1109,12 @@ function damageBoss(baseDmg, elem) {
 
 function onEnemyDeath(e) {
   const t = ENEMY_TYPES[e.type];
+  G.score += t.hp;
   G.kills++;
-  G.score += Math.round(t.hp * 2);
   addParticles(e.x, e.y, ELEMENTS[t.elem].color, 20, 5, 40);
   if (t.elite) {
     for (let i = 0; i < 2; i++) spawnCrystal();
-  } else if (Math.random() < (G.boss ? 0.35 : 0.5)) {
+  } else if (Math.random() < 0.35) {
     spawnCrystal();
   }
 }
@@ -1879,11 +1879,11 @@ function updateEvacPoint() {
 
 function onBossDeath() {
   const b = G.boss;
-  G.score += 500;
+  G.score += b.hp;
   G.kills++;
   addParticles(b.x, b.y, '#ff6b35', 60, 8, 60);
   addParticles(b.x, b.y, '#ffeb3b', 40, 6, 50);
-  G.shake = 20;
+  G.shake = 10;
   // Drop random crystals
   for (let i = 0; i < 4; i++) {
     spawnCrystal();
@@ -1915,7 +1915,7 @@ function onBossDeath() {
 
 function evacuate() {
   G.evacPoint = null;
-  const bonus = 200 + G.wave * 50;
+  const bonus = G.wave * 10;
   G.score += bonus;
   gameOver(true);
 }
