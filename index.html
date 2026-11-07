@@ -279,7 +279,7 @@ button:hover{transform:scale(1.05)}
     <p>
       <b style="color:#ff6b35">火流星</b> 远程锁定目标 │ <b style="color:#67f959">小花仙</b> 嘲讽控制输出<br>
       <b style="color:#fdd835">地崩山摧</b> 4段范围伤害 │ <b style="color:#b84bf7">柒之型</b> 8段弹跳伤害<br>
-      <b style="color:#e6fdff">绝对零度</b> 叠层高额爆发 │ <b style="color:#65b8fc">大漩涡</b> 牵引+持续伤害
+      <b style="color:#e6fdff">绝对零度</b> 叠层高额爆发 │ <b style="color:#65b8fc">大漩涡</b> 牵引持续伤害
     </p>
     <p style="font-size:11px;color:#888">消耗4 · 冷却5s · 击败Boss后解锁</p>
   </div>
@@ -2263,7 +2263,10 @@ function updateEvacPoint() {
   e.pulse += 0.05;
   const p = G.player;
   if (dist(e, p) < e.r + p.r) {
-    evacuate();
+    e.hold = (e.hold || 0) + 1;     // 需在撤离点内连续停留 2s（120帧）才撤离
+    if (e.hold >= 120) evacuate();
+  } else {
+    e.hold = 0;                     // 离开即清零
   }
 }
 
@@ -2589,6 +2592,11 @@ function drawEvacPoint() {
   ctx.globalAlpha = 0.2; ctx.fillStyle = '#4fc3f7';
   ctx.beginPath(); ctx.arc(0, 0, e.r, 0, TAU); ctx.fill();
   ctx.globalAlpha = 1; ctx.shadowBlur = 0;
+  if (e.hold) {                       // 停留进度环
+    const t = e.hold / 120;
+    ctx.strokeStyle = '#e1f5fe'; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.arc(0, 0, e.r - 4, -Math.PI / 2, -Math.PI / 2 + TAU * t); ctx.stroke();
+  }
   ctx.fillStyle = '#4fc3f7'; ctx.font = 'bold 12px sans-serif'; ctx.textAlign = 'center';
   ctx.fillText('撤离点', 0, 0);
   const sec = Math.ceil((G.waveCD || 0) / 60);
