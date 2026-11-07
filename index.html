@@ -332,7 +332,7 @@ const SPELLS = [
   // === CIRCLE (2星) 范围法术 ===
   { id:'fire_circle',  name:'朱雀扇',   elem:'fire',    gesture:'CIRCLE', cost:2, type:'fan',    dmg:4, radius:3*UNIT, radian:Math.PI*2/3 },
   { id:'wood_circle',  name:'木灵召唤', elem:'wood',    gesture:'CIRCLE', cost:2, type:'summon',   spiritHp:20, dmg:2, atkCD:120, atkRange:1*UNIT }, 
-  { id:'earth_circle', name:'玛利亚之墙',     elem:'earth',   gesture:'CIRCLE', cost:2, type:'wall',   size:1*UNIT, wallHp:40, dur:9999 },
+  { id:'earth_circle', name:'守护之墙',     elem:'earth',   gesture:'CIRCLE', cost:2, type:'wall',   size:1*UNIT, wallHp:40, dur:9999 },
   { id:'thunder_circle',name:'雷の呼吸·壹之型', elem:'thunder', gesture:'CIRCLE', cost:2, type:'chain',  dmg:3, range:2*UNIT, maxJumps:6 },
   { id:'ice_circle',   name:'冰冻三尺',     elem:'ice',     gesture:'CIRCLE', cost:2, type:'freeze',   dmg:2, radius:2*UNIT, freezeMon:3*60, freezeBoss:3*60 },
   { id:'water_circle', name:'春风化雨', elem:'water',   gesture:'CIRCLE', cost:2, type:'healzone', radius:1.5*UNIT, healRate:10, dur:5*60 },
@@ -646,8 +646,8 @@ const G = {
   enhanceDropped: [],
   enhanceDrops: [],
   castFx: null,
-  epicZones: [],      // 4星持续区域（地震/大漩涡）
-  pendingCasts: [],   // 4星延时结算（火流星前摇/柒之型连跳）
+  epicZones: [], 
+  pendingCasts: [], 
 };
 
 const SAVE_KEY = 'element_expedition_save';
@@ -927,7 +927,7 @@ function castEpicSpell(spell) {
       G.shake = 10;
       break;
     }
-    case 'thunder7': { // 雷の呼吸·柒之型：每跳锁定范围3内最远敌人，最多8跳，间隔0.5s，不可连续命中同一目标
+    case 'thunder7': { // 雷闪/柒之型：每跳锁定范围3内最远敌人，跳数上限，间隔0.5s，不可连续命中同一目标
       let from = {x:p.x, y:p.y};
       let jumps = 0, last = null;
       const maxJumps = Math.round(spell.maxJumps * getBuffThunder());
@@ -935,7 +935,7 @@ function castEpicSpell(spell) {
         const next = farthestEnemyWithin(from, spell.atkRange, last);
         if (!next) return;
         G.traceEffects.push({type:'chain', segs:[{x1:from.x, y1:from.y, x2:next.x, y2:next.y}],
-          elem:'thunder', life:120, color:THUNDER_TINTS.epic, width:12});
+          elem:'thunder', life:100, color:THUNDER_TINTS.epic, width:12});
         if (next === G.boss) damageBoss(spell.dmg, 'thunder');
         else damageEnemy(next, spell.dmg, 'thunder');
         addParticles(next.x, next.y, THUNDER_TINTS.epic, 8, 5, 25);
@@ -984,7 +984,7 @@ function castEpicSpell(spell) {
   return true;
 }
 
-// 柒之型索敌：范围内最远的目标（用边缘距离，与 findNearestEnemy 一致），可排除上一跳目标
+// 雷闪/柒之型索敌：范围内最远的目标（用边缘距离，与 findNearestEnemy 一致），可排除上一跳目标
 function farthestEnemyWithin(from, range, exclude) {
   let best = null, bd = -Infinity;
   for (const e of G.enemies) {
@@ -1159,7 +1159,7 @@ function castSpell(spell) {
     // 藤蔓缠绕：选中最近敌人，直接施加伤害+束缚
     const target = findNearestEnemy(p.x, p.y, spell.range);
     if (target && target.rootT === 0) {
-      G.traceEffects.push({type:'magicCircle', x:target.x, y:target.y, r:target.r+8, elem:'wood', life:30, color:ELEMENTS['wood'].color});
+      G.traceEffects.push({type:'ring', x:target.x, y:target.y, r:target.r+8, elem:'wood', life:30, color:ELEMENTS['wood'].color});
       if (target === G.boss) {
         damageBoss(spell.dmg, 'wood'); 
         target.rootT = spell.bindBoss * getBuffWood();  // 时长不可叠加
@@ -1264,7 +1264,7 @@ function castSpell(spell) {
     G.shake = 6;
     if (hitAny) {
       G.traceEffects.push({type:'fan', x:p.x, y:p.y, ang:p.facing, elem:'fire',
-        radius:radius, radian:spell.radian, life:45, color:ELEMENTS['fire'].color});
+        radius:radius, radian:spell.radian, life:45, total:45, color:ELEMENTS['fire'].color});
       addProf('fire');
     } else {
       showFeedback('未命中', '#888');
@@ -1334,8 +1334,8 @@ function castSpell(spell) {
       return false;
     }
     if (targets.length > 0) {
-      G.traceEffects.push({type:'chain', segs:targets, elem:'thunder', life:45,
-        color:THUNDER_TINTS.chain, width:12});   // 与4星同粗细，颜色比1星更深
+      G.traceEffects.push({type:'chain', segs:targets, elem:'thunder', life:60,
+        color:THUNDER_TINTS.chain, width:12}); 
       for (const t of targets) {
         addParticles(t.x2, t.y2, THUNDER_TINTS.chain, 8, 5, 25);
         addParticles(t.x2, t.y2, '#dbeafe', 4, 3, 20);
@@ -2174,7 +2174,7 @@ function updateTreeSpirits() {  // 更新木灵（2星木灵 / 4星小花仙）
             if (target === G.boss) { damageBoss(s.rootDmg, 'wood'); target.rootT = 2*60; }
             else { damageEnemy(target, s.rootDmg, 'wood'); target.rootT = 4*60; }
             addFloatText(target.x, target.y-target.r-20, '束缚', '#66bb6a');
-            G.traceEffects.push({type:'magicCircle', x:target.x, y:target.y, r:target.r+8,
+            G.traceEffects.push({type:'ring', x:target.x, y:target.y, r:target.r+8,
               elem:'wood', life:30, color:ELEMENTS.wood.color});
             addParticles(target.x, target.y, '#a5d6a7', 6, 4, 20);
           } else {
@@ -2802,7 +2802,7 @@ function drawtraceEffects() {
     ctx.lineCap = 'round'; ctx.lineJoin = 'round';
     ctx.shadowColor = le.color; ctx.shadowBlur = 15;
     if (le.type === 'zigzag') {
-      // 闪电效果：外层光晕 + 内层白芯
+      // 雷线效果：外层光晕 + 内层白芯
       ctx.shadowColor = le.color; ctx.shadowBlur = 20;
       ctx.strokeStyle = le.color; ctx.lineWidth = le.width || 8;
       ctx.beginPath();
@@ -2814,17 +2814,19 @@ function drawtraceEffects() {
       ctx.moveTo(le.segs[0].x1, le.segs[0].y1);
       for (const s of le.segs) ctx.lineTo(s.x2, s.y2);
       ctx.stroke();
-    } else if (le.type === 'fan') {
+    } else if (le.type === 'fan') {  // 朱雀扇：从中心向两侧展开，life归零展开完毕
+      const prog = clamp(1 - le.life / le.total, 0, 1);
+      const half = le.radian / 2 * prog;
       ctx.fillStyle = le.color;
       ctx.globalAlpha = a * 0.5;
       ctx.beginPath();
       ctx.moveTo(le.x, le.y);
-      ctx.arc(le.x, le.y, le.radius, le.ang - le.radian/2, le.ang + le.radian/2);
+      ctx.arc(le.x, le.y, le.radius, le.ang - half, le.ang + half);
       ctx.closePath(); ctx.fill();
       ctx.globalAlpha = a;
       ctx.strokeStyle = le.color; ctx.lineWidth = 2;
       ctx.beginPath();
-      ctx.arc(le.x, le.y, le.radius, le.ang - le.radian/2, le.ang + le.radian/2);
+      ctx.arc(le.x, le.y, le.radius, le.ang - half, le.ang + half);
       ctx.lineTo(le.x, le.y); ctx.closePath(); ctx.stroke();
     } else if (le.type === 'circle') {
       if (!le.noStroke) {
@@ -2833,14 +2835,14 @@ function drawtraceEffects() {
       }
       ctx.globalAlpha = a * (le.fillAlpha || 0.15); ctx.fillStyle = le.color;
       ctx.beginPath(); ctx.arc(le.x, le.y, le.r, 0, TAU); ctx.fill();
-    } else if (le.type === 'magicCircle') {
+    } else if (le.type === 'ring') {
       ctx.strokeStyle = le.color; ctx.lineWidth = 3;
       ctx.beginPath(); ctx.arc(le.x, le.y, le.r, 0, TAU); ctx.stroke();
       ctx.beginPath(); ctx.arc(le.x, le.y, le.r*0.6, 0, TAU); ctx.stroke();
       ctx.globalAlpha = a * 0.2; ctx.fillStyle = le.color;
       ctx.beginPath(); ctx.arc(le.x, le.y, le.r, 0, TAU); ctx.fill();
     } else if (le.type === 'chain') {
-      // 闪电效果：抖动折线 + 外层光晕 + 内层白芯（无端点白点）
+      // 雷链效果：抖动折线 + 外层光晕 + 内层白芯（无端点白点）
       ctx.shadowColor = le.color; ctx.shadowBlur = 20;
       ctx.strokeStyle = le.color; ctx.lineWidth = le.width || 8;
       ctx.beginPath();
@@ -2882,18 +2884,17 @@ function drawtraceEffects() {
       ctx.globalAlpha = fade * (0.08 + 0.12 * ease);
       ctx.fillStyle = '#81d4fa';
       ctx.beginPath(); ctx.arc(le.x, le.y, rr, 0, TAU); ctx.fill();
-      // 环上的冰晶尖刺
-      ctx.globalAlpha = fade * 0.85;
-      ctx.strokeStyle = '#e1f5fe'; ctx.lineWidth = 2;
-      for (let k = 0; k < 12; k++) {
-        const ang = k * TAU / 12 + 0.15;
-        const r1 = rr * 0.8, r2 = rr * (0.9 + 0.08 * (k % 3));
-        ctx.beginPath();
-        ctx.moveTo(le.x + Math.cos(ang) * r1, le.y + Math.sin(ang) * r1);
-        ctx.lineTo(le.x + Math.cos(ang) * r2, le.y + Math.sin(ang) * r2);
-        ctx.stroke();
-      }
-      // 内圈霜纹
+      // // 环上的冰晶尖刺
+      // ctx.globalAlpha = fade * 0.85;
+      // ctx.strokeStyle = '#e1f5fe'; ctx.lineWidth = 2;
+      // for (let k = 0; k < 12; k++) {
+      //   const ang = k * TAU / 12 + 0.15;
+      //   const r1 = rr * 0.8, r2 = rr * (0.9 + 0.08 * (k % 3));
+      //   ctx.beginPath();
+      //   ctx.moveTo(le.x + Math.cos(ang) * r1, le.y + Math.sin(ang) * r1);
+      //   ctx.lineTo(le.x + Math.cos(ang) * r2, le.y + Math.sin(ang) * r2);
+      //   ctx.stroke();
+      // }// 内圈霜纹
       ctx.globalAlpha = fade * 0.45;
       ctx.strokeStyle = '#b3e5fc'; ctx.lineWidth = 1.5;
       ctx.beginPath(); ctx.arc(le.x, le.y, rr * 0.62, 0, TAU); ctx.stroke();
