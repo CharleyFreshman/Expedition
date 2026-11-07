@@ -358,7 +358,7 @@ const Epic_SPELLS = [
   { id:'wood_zig',    name:'召唤花仙',          elem:'wood',    gesture:'ZIGZAG', cost:4, type:'flower',   hp:40, dmg:2, rootDmg:1, atkCD:60, atkRange:2*UNIT, spd:2.5, cd:300 },
   { id:'earth_zig',   name:'地崩山摧',        elem:'earth',   gesture:'ZIGZAG', cost:4, type:'quake',    dmg:4, times:4, side:4*UNIT, atkCD:120, cd:300 },
   { id:'thunder_zig', name:'雷の呼吸·柒之型', elem:'thunder', gesture:'ZIGZAG', cost:4, type:'thunder7', dmg:4, atkRange:3*UNIT, maxJumps:8, atkCD:30, cd:300 },
-  { id:'ice_zig',     name:'绝对零度',        elem:'ice',     gesture:'ZIGZAG', cost:4, type:'blizzard', dmg:4, radius:3*UNIT, freezeMon:3*60, freezeBoss:3*60, cd:300 },
+  { id:'ice_zig',     name:'绝对零度',        elem:'ice',     gesture:'ZIGZAG', cost:4, type:'blizzard', dmg:4, radius:2.5*UNIT, freezeMon:3*60, freezeBoss:3*60, cd:300 },
   { id:'water_zig',   name:'大漩涡',          elem:'water',   gesture:'ZIGZAG', cost:4, type:'vortex',   dmg:1, dur:600, radius:2.5*UNIT, cd:300 },
 ];
 const Epic_MAP = {};
@@ -902,19 +902,20 @@ function castEpicSpell(spell) {
       }});
       break;
     }
-    case 'flower': { // 小花仙：正前方召唤，场上上限1（重复施放则替换旧花仙）
+    case 'flower': { // 小花仙：正前方召唤，上限1（重复施放则增加Hp）
       const Hp = spell.hp * getBuffWood();
-      const old = G.treeSpirits.findIndex(s => s.kind === 'fairy');
-      if (old >= 0) {
-        G.treeSpirits.splice(old, 1);
-        addFloatText(p.x, p.y - p.r - 30, '更新', '#f48fb1');
-        addParticles(p.x, p.y, '#f48fb1', 12, 4, 30);
+      const s = G.treeSpirits.find(t => t.kind === 'fairy');
+      if (s) {
+        s.hp += 20;
+        addParticles(s.x, s.y, '#f48fb1', 12, 4, 30);
+        addFloatText(s.x, s.y - s.r - 15, '成长', '#66bb6a');
+      } else {
+        G.treeSpirits.push({
+          kind:'fairy', r:12, x:p.x + Math.cos(p.facing), y:p.y + Math.sin(p.facing),
+          vx:0, vy:0, hp:Hp, maxHp:Hp, dmg:spell.dmg, rootDmg:spell.rootDmg,
+          atkCD:spell.atkCD, atkRange:spell.atkRange, spd:spell.spd, atkEff:0,
+        });
       }
-      G.treeSpirits.push({
-        kind:'fairy', r:16, x:p.x + Math.cos(p.facing), y:p.y + Math.sin(p.facing),
-        vx:0, vy:0, hp:Hp, maxHp:Hp, dmg:spell.dmg, rootDmg:spell.rootDmg,
-        atkCD:spell.atkCD, atkRange:spell.atkRange, spd:spell.spd, atkEff:0,
-      });
       addParticles(p.x, p.y, col, 25, 4, 40);
       break;
     }
@@ -1144,7 +1145,7 @@ function splitEarth(pr) {          //碎石分裂: 1/3/9/11点钟（canvas y轴�
   addParticles(pr.x, pr.y, ELEMENTS['earth'].color, 6, 3, 30);
 }
 
-function healAllTreeSpirits() {  // 强化木召唤物
+function healAllTreeSpirits() {  // 治愈木召唤物
   for (const s of G.treeSpirits) {
     s.hp += 10;
     addParticles(s.x, s.y, '#66bb6a', 15, 3, 30);
@@ -1298,7 +1299,7 @@ function castSpell(spell) {
     // 木：召唤木灵，血量20，嘲讽
     const Hp = spell.spiritHp * getBuffWood();
     G.treeSpirits.push({
-      r:14, x: p.x + Math.cos(p.facing)*20, y: p.y + Math.sin(p.facing)*20, vx:0, vy:0,
+      r:14, x: p.x + Math.cos(p.facing), y: p.y + Math.sin(p.facing), vx:0, vy:0,
       hp:Hp, maxHp:20, dmg:spell.dmg, atkCD:spell.atkCD, atkRange:spell.atkRange, atkEff:0,
     });
     addParticles(p.x, p.y, '#66bb6a', 25, 4, 40);
@@ -1728,6 +1729,7 @@ function onEnemyDeath(e) {
 function updateBoss() {
   const b = G.boss;
   if (!b) return;
+  if (b.hp <= 0) { onBossDeath(); return; }   // 血量归零立即结算
   const p = G.player;
   const B = BOSS_TYPES[b.type];
   const phases = B.phases;
@@ -1905,7 +1907,7 @@ function updateBoss() {
 
 function onBossDeath() {
   const b = G.boss;
-  G.score += b.hp;
+  G.score += Math.max(0, b.hp);
   G.kills++;
   addParticles(b.x, b.y, '#ff6b35', 60, 8, 60);
   addParticles(b.x, b.y, '#ffeb3b', 40, 6, 50);
@@ -2151,7 +2153,7 @@ function updateTreeSpirits() {  // 更新木灵（2星木灵 / 4星小花仙）
       const p = G.player;
       if (dist(s, p) > 1*UNIT) {           // 超出1单位才跟随
         const ang = angle(p, s);
-        s.vx = lerp(s.vx, Math.cos(ang)*s.spd, 0.25);   // 与 updatePlayer 同插值模组
+        s.vx = lerp(s.vx, Math.cos(ang)*s.spd, 0.25); 
         s.vy = lerp(s.vy, Math.sin(ang)*s.spd, 0.25);
         s.x = clamp(s.x + s.vx, s.r, W-s.r);
         s.y = clamp(s.y + s.vy, s.r, H-s.r);
@@ -2263,8 +2265,8 @@ function updateEvacPoint() {
   e.pulse += 0.05;
   const p = G.player;
   if (dist(e, p) < e.r + p.r) {
-    e.hold = (e.hold || 0) + 1;     // 需在撤离点内连续停留 2s（120帧）才撤离
-    if (e.hold >= 120) evacuate();
+    e.hold = (e.hold || 0) + 1;     
+    if (e.hold >= 120 || G.waveCD <= 1) evacuate();  // 停留满2s，或撤离倒计时结束（下一帧刷新波次前）直接撤离
   } else {
     e.hold = 0;                     // 离开即清零
   }
@@ -2592,7 +2594,7 @@ function drawEvacPoint() {
   ctx.globalAlpha = 0.2; ctx.fillStyle = '#4fc3f7';
   ctx.beginPath(); ctx.arc(0, 0, e.r, 0, TAU); ctx.fill();
   ctx.globalAlpha = 1; ctx.shadowBlur = 0;
-  if (e.hold) {                       // 停留进度环
+  if (e.hold) {                       // 撤离进度环
     const t = e.hold / 120;
     ctx.strokeStyle = '#e1f5fe'; ctx.lineWidth = 3;
     ctx.beginPath(); ctx.arc(0, 0, e.r - 4, -Math.PI / 2, -Math.PI / 2 + TAU * t); ctx.stroke();
@@ -2710,7 +2712,7 @@ function drawHealZones() {
 
 function drawTreeSpirits() {
   for (const s of G.treeSpirits) {
-    if (s.kind === 'fairy') {   // 小花仙：粉色身体 + 4 翅膀 + 黑眼睛（无脸）
+    if (s.kind === 'fairy') {   // 小花仙：粉色身体 + 4 翅膀 + 黑眼睛
       if (s.atkEff > 0) {       // 出手时的花瓣冲击环
         const prog = 1 - s.atkEff / 30;
         const rr = s.r * (1.05 + prog * 1.15);
@@ -2738,7 +2740,7 @@ function drawTreeSpirits() {
       ctx.fillStyle = '#1f1f1f';
       ctx.beginPath(); ctx.arc(-3.4, -1, 1.8, 0, TAU); ctx.arc(3.4, -1, 1.8, 0, TAU); ctx.fill();
       ctx.restore();
-      if (s.hp < s.maxHp) {
+      if (s.hp < s.maxHp) {  // 超过最大Hp不显示以免误判
         const bw = s.r*2, bh = 4;
         ctx.fillStyle = 'rgba(0,0,0,0.6)';
         ctx.fillRect(s.x-bw/2, s.y-s.r-10, bw, bh);
@@ -2782,7 +2784,7 @@ function drawTreeSpirits() {
     ctx.arc(s.x+5, s.y-3, 3, 0, TAU);
     ctx.fill();
     // HP bar
-    if (s.hp < s.maxHp) {  // 成长后不显示
+    if (s.hp < s.maxHp) {  // 超过最大Hp不显示
       const bw = s.r*2, bh = 4;
       ctx.fillStyle = 'rgba(0,0,0,0.6)';
       ctx.fillRect(s.x-bw/2, s.y-s.r-10, bw, bh);
