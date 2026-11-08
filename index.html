@@ -1597,7 +1597,7 @@ function updateEnemy() {
       continue; // 跳过当前敌人
     }
     if (e.rootT > 0) {
-      e.rootT--; e.vx*=0.9; e.vy*=0.9; e.x+=e.vx; e.y+=e.vy;
+      e.rootT--; e.vx = 0; e.vy = 0;   // 束缚：速度清零
       if (e.hp <= 0) G.enemies.splice(i, 1); // 束缚期间死亡立即移除
       continue;
     }
@@ -1785,9 +1785,8 @@ function updateBoss() {
   const spdMult = phase.spdMult || 1;
   const spd = Math.max(0, B.spd * spdMult - ICE_SLOW * getBuffIce() * (b.slowStacks||0)
                           - (b.quakeSlowT > 0 ? QUAKE_SLOW : 0));
-  if (b.rootT > 0 && b.phaseNO != len - 1) { 
-    b.rootT--;
-  }
+  const rooted = b.rootT > 0 && b.phaseNO != len - 1;   // 束缚：速度清零（狂暴阶段免疫）
+  if (rooted) { b.rootT--; b.vx = 0; b.vy = 0; }
   b.moveT--;
   if (b.moveT <= 0) {  // Movement 随机游走
     b.targetX = clamp(p.x + rand(-100, 100), 60, W - 60);
@@ -1796,7 +1795,7 @@ function updateBoss() {
   }
   const dx = b.targetX - b.x, dy = b.targetY - b.y;
   const d = Math.hypot(dx, dy);
-  if (d > 0.01) {    // 向t移动 (dx/d) = cos(atan2(dy, dx))
+  if (d > 0.01) {    // 向t移动 (dx/d) = cos(atan2(dy, dx)) && !rooted ？
     b.vx = lerp(b.vx, (dx / d) * spd, 0.15);
     b.vy = lerp(b.vy, (dy / d) * spd, 0.15);
   }
@@ -2162,10 +2161,10 @@ function updateTreeSpirits() {  // 更新木灵（2星木灵 / 4星小花仙）
         } else {
           s.atkCD = 60; s.atkEff = 30;
           G.traceEffects.push({type:'hit', x:target.x, y:target.y, r:target.r, life:14,
-            color: bindMode ? '#66bb6a' : '#f06292'});   // 命中冲击波，受击反馈明显
+            color: bindMode ? '#66bb6a' : '#f06292'});   // 命中受击反馈
           if (bindMode) {
-            if (target === G.boss) { damageBoss(s.rootDmg, 'wood'); target.rootT = 2*60; }
-            else { damageEnemy(target, s.rootDmg, 'wood'); target.rootT = 4*60; }
+            if (target === G.boss) { damageBoss(s.rootDmg, 'wood'); target.rootT = 1*60; }
+            else { damageEnemy(target, s.rootDmg, 'wood'); target.rootT = 2*60; }
             addFloatText(target.x, target.y-target.r-20, '束缚', '#66bb6a');
             G.traceEffects.push({type:'ring', x:target.x, y:target.y, r:target.r+8,
               elem:'wood', life:30, color:ELEMENTS.wood.color});
