@@ -266,20 +266,17 @@ button:hover{transform:scale(1.05)}
 
     <h3>3星法术（折线·增益）</h3>
     <p>
-      <b style="color:#ff6b35">火</b> 增伤 扩大范围<br>
-      <b style="color:#67f959">木</b> 增伤 治愈精灵<br>
-      <b style="color:#fdd835">土</b> 增伤 加固城墙<br>
-      <b style="color:#b84bf7">雷</b> 增伤 增加连击<br>
-      <b style="color:#e6fdff">冰</b> 增伤 强化控制<br>
-      <b style="color:#65b8fc">水</b> 增伤 强化治疗
+      <b style="color:#ff6b35">火</b> 增伤 扩大范围 | <b style="color:#67f959">木</b> 增伤 治愈精灵<br>
+      <b style="color:#fdd835">土</b> 增伤 加固城墙 | <b style="color:#b84bf7">雷</b> 增伤 增加连击<br>
+      <b style="color:#e6fdff">冰</b> 增伤 强化控制 | <b style="color:#65b8fc">水</b> 增伤 强化治疗
     </p>
     <p style="font-size:11px;color:#888">消耗3 · 冷却5s · 持续10s · 击败Boss后解锁</p>
 
     <h3>4星法术（Z形·史诗）</h3>
     <p>
-      <b style="color:#ff6b35">火流星</b> 远程锁定目标 │ <b style="color:#67f959">小花仙</b> 嘲讽控制输出<br>
+      <b style="color:#ff6b35">火流星</b> 远程锁定目标 │ <b style="color:#67f959">小花仙</b> 嘲讽输出控制<br>
       <b style="color:#fdd835">地崩山摧</b> 4段范围伤害 │ <b style="color:#b84bf7">柒之型</b> 8段弹跳伤害<br>
-      <b style="color:#e6fdff">绝对零度</b> 叠层高额爆发 │ <b style="color:#65b8fc">大漩涡</b> 牵引持续伤害
+      <b style="color:#e6fdff">绝对零度</b> 叠层高额爆发 │ <b style="color:#65b8fc">漩涡</b> 持续伤害牵引
     </p>
     <p style="font-size:11px;color:#888">消耗4 · 冷却5s · 击败Boss后解锁</p>
   </div>
@@ -312,7 +309,7 @@ const ELEMENTS = {  // 元素图标
   earth:   { name:'土', color:'#fdd835', icon:'🟨' },
   thunder: { name:'雷', color:'#b84bf7', icon:'\u26A1' },
   ice:     { name:'冰', color:'#e6fdff', icon:'\u2744' },
-  water:   { name:'水', color:'#38a4fc', icon:'\u{1F4A7}' },
+  water:   { name:'水', color:'#65b8fc', icon:'\u{1F4A7}' },
 };
 const ELEM_KEYS = ['fire','wood','earth','thunder','ice','water'];
 
@@ -355,11 +352,11 @@ ENHANCE_SPELLS.forEach(s => { ENHANCE_MAP[s.elem + '|' + s.gesture] = s; });
 // === 4星(ZIGZAG) 史诗法术 === 消耗4材料, 冷却5s, 需解锁
 const Epic_SPELLS = [
   { id:'fire_zig',    name:'火流星',          elem:'fire',    gesture:'ZIGZAG', cost:4, type:'meteor',   dmg:8, radius:2*UNIT, castTime:60, cd:300 },
-  { id:'wood_zig',    name:'召唤花仙',          elem:'wood',    gesture:'ZIGZAG', cost:4, type:'flower',   hp:40, dmg:2, rootDmg:1, atkCD:60, atkRange:2*UNIT, spd:2.5, cd:300 },
+  { id:'wood_zig',    name:'花仙下凡',          elem:'wood',    gesture:'ZIGZAG', cost:4, type:'flower',   hp:40, dmg:2, rootDmg:1, atkCD:60, atkRange:2*UNIT, spd:2.5, cd:300 },
   { id:'earth_zig',   name:'地崩山摧',        elem:'earth',   gesture:'ZIGZAG', cost:4, type:'quake',    dmg:4, times:4, side:4*UNIT, atkCD:120, cd:300 },
   { id:'thunder_zig', name:'雷の呼吸·柒之型', elem:'thunder', gesture:'ZIGZAG', cost:4, type:'thunder7', dmg:4, atkRange:3*UNIT, maxJumps:8, atkCD:30, cd:300 },
   { id:'ice_zig',     name:'绝对零度',        elem:'ice',     gesture:'ZIGZAG', cost:4, type:'blizzard', dmg:4, radius:2.5*UNIT, freezeMon:3*60, freezeBoss:3*60, cd:300 },
-  { id:'water_zig',   name:'大漩涡',          elem:'water',   gesture:'ZIGZAG', cost:4, type:'vortex',   dmg:1, dur:600, radius:2.5*UNIT, cd:300 },
+  { id:'water_zig',   name:'漩涡',          elem:'water',   gesture:'ZIGZAG', cost:4, type:'vortex',   dmg:1, dur:600, radius:2.5*UNIT, cd:300 },
 ];
 const Epic_MAP = {};
 Epic_SPELLS.forEach(s => { Epic_MAP[s.elem + '|' + s.gesture] = s; });
@@ -724,8 +721,8 @@ const PROF_MAX = 999;
 const TAUNT_RANGE = 2*UNIT;          // 精灵嘲讽范围
 const ICE_DECAY = 120;        // 冰锥减速衰减1层的时间
 const ICE_SLOW = 0.3;          // 冰锥每层减速量
-const QUAKE_DECAY = 60;   // 地崩山摧独立减速持续时间
-const QUAKE_SLOW = 0.5;        // 地崩山摧减速量
+const QUAKE_DECAY = 60;   // 地崩山摧减速持续时间
+const QUAKE_SLOW = 0.6;        // 地崩山摧减速量
 
 // ==================== 工具函数 ====================
 const TAU = Math.PI * 2;
@@ -902,7 +899,7 @@ function castEpicSpell(spell) {
       }});
       break;
     }
-    case 'flower': { // 小花仙：正前方召唤，上限1（重复施放则增加Hp）
+    case 'flower': { // 小花仙：正前方召唤，上限1（重复施放增加Hp）
       const Hp = spell.hp * getBuffWood();
       const s = G.treeSpirits.find(t => t.kind === 'fairy');
       if (s) {
@@ -972,7 +969,7 @@ function castEpicSpell(spell) {
       G.shake = 4;
       break;
     }
-    case 'vortex': { // 大漩涡：玩家位置与facing方向2.5单位为圆心、r=2.5；牵引+秒伤，持续10s
+    case 'vortex': { // 漩涡：玩家位置与facing方向2.5单位为圆心、r=2.5；牵引+秒伤，持续10s
       const cx = p.x + Math.cos(p.facing) * spell.radius;
       const cy = p.y + Math.sin(p.facing) * spell.radius;
       G.epicZones.push({kind:'vortex', x:cx, y:cy, r:spell.radius, dmg:spell.dmg,
@@ -1009,17 +1006,17 @@ function updatePendingCasts() {
   }
 }
 
-// 地崩山摧：每震一次生成一批不规则裂纹，宽度固定
+// 地崩山摧：每震一次生成一批不规则裂纹
 function spawnQuakeCracks(z) {
   const hw = z.side / 2;
   const born = z.maxLife - z.life;
-  const w = 6;
-  for (let k = 0; k < 6; k++) {
+  const w = 6;  // 宽度固定
+  for (let k = 0; k < 5; k++) {
     const segs = [];
-    let a = rand(0, TAU), cx = 0, cy = 0;
-    const len = hw * rand(0.6, 1.0);
+    let a = rand(0, 2*TAU), cx = 0, cy = 0;
+    const len = hw * rand(0.5, 1.0);
     for (let s = 0; s < 5; s++) {
-      a += rand(-1, 1);
+      a += rand(-0.5, 0.5);
       const step = len / 5;
       cx += Math.cos(a) * step;
       cy += Math.sin(a) * step;
@@ -1057,7 +1054,7 @@ function updateEpicZones() {
         G.shake = round(4 + z.dmg);
       }
       if (z.flashT > 0) z.flashT--;
-    } else if (z.kind === 'vortex') {   //大漩涡（圆形牵引+秒伤） 
+    } else if (z.kind === 'vortex') {   //漩涡（圆形牵引+秒伤） 
       const pull = t => {              // vy:圆心方向 1 / vx:切线方向 1，按敌人阻尼插值0.1折算
         const dx = z.x - t.x, dy = z.y - t.y, d = Math.hypot(dx, dy) || 1;
         const rx = dx / d, ry = dy / d;
@@ -1264,7 +1261,7 @@ function castSpell(spell) {
     G.shake = 6;
     if (hitAny) {
       G.traceEffects.push({type:'fan', x:p.x, y:p.y, ang:p.facing, elem:'fire',
-        radius:radius, radian:spell.radian, life:45, total:45, color:ELEMENTS['fire'].color});
+        radius:radius, radian:spell.radian, life:40, total:40, color:ELEMENTS['fire'].color});
       addProf('fire');
     } else {
       showFeedback('未命中', '#888');
@@ -1422,7 +1419,7 @@ function spawnBoss(type) {  // createBoss
     weak: ph0.weak, resist: ph0.resist,
     immune: ph0.immune, elemMode: ph0.elemMode,
     summonCD: ph0.summonCD, summonT: ph0.summonCD,
-    moveT: 0, targetX: W/2, targetY: H/2, freezeT: 0, rootT: 0, atkEff: 0,
+    moveT: 0, targetX: W/2, targetY: H/2, freezeT: 0, rootT: 0,
     enrageWeakT: 600, slowStacks: 0, slowT: 0, quakeSlowT: 0,
   };
 }
@@ -1614,7 +1611,7 @@ function updateEnemy() {
     const d = dist(e, p);
     const dmg = e.dmg;
 
-    let target = p;          // findnearestplayer() 多人联机
+    let target = p;          // findNearestPlayer() 多人联机
     for (const s of G.treeSpirits) {    // Taunt 嘲讽小怪: target nearest tree spirit
       if (dist(e, s) < TAUNT_RANGE) { target = s; break; }
     }
@@ -1721,14 +1718,15 @@ function onEnemyDeath(e) {
   G.kills++;
   addParticles(e.x, e.y, ELEMENTS[t.elem].color, 16, 5, 30);
   if (t.elite) {
-    for (let i = 0; i < 2; i++) spawnCrystal();
-  } else if (Math.random() < 0.35) {  // 普通敌人掉落水晶概率 G.boss ? 0.35 : 0.5
+    for (let i = 0; i < 2; i++) {
+      if (Math.random() < G.boss ? 0.5 : 1) spawnCrystal();
+    }
+  } else if (Math.random() < 0.35) {  // 普通敌人掉落水晶概率
     spawnCrystal();
   }
 }
 function updateBoss() {
-  const b = G.boss;
-  if (!b) return;
+  const b = G.boss; if (!b) return;
   if (b.hp <= 0) { onBossDeath(); return; }   // 血量归零立即结算
   const p = G.player;
   const B = BOSS_TYPES[b.type];
@@ -1805,7 +1803,6 @@ function updateBoss() {
   b.x = clamp(b.x + b.vx, b.r, W - b.r);
   b.y = clamp(b.y + b.vy, b.r, H - b.r);
   if (b.hitFlash > 0) b.hitFlash--;
-  if (b.atkEff > 0) b.atkEff--;
 
   // Summon minions
   b.summonT--;
@@ -1836,10 +1833,9 @@ function updateBoss() {
     const ang = b.facing;
     const shotElem = Array.isArray(b.elemMode) ? pick(b.elemMode) : b.elemMode;
     if (b.type === 'evilSpirit') {
-      // 腐化树灵：圆形冲击波
-      b.atkEff = 30;
-      G.traceEffects.push({type:'circle', x:b.x, y:b.y, r:range, elem:'wood', life:30,
-        color:ELEMENTS['wood'].color, noStroke:true, fillAlpha:0.25});   // 冲击波只保留柔和填充，无外圈实线
+      // 腐化树灵：固定位置扩散波纹
+      G.traceEffects.push({type:'ripple', x:b.x, y:b.y, r:range, total:30, life:30,
+        color:'#8bc34a', elem:'wood'});
       if (dist(b, p)-b.r < range + p.r && p.hitFlash <= 0) {
         if (p.shield > 0) { const a = Math.min(p.shield, dmg); p.shield -= a; }
         else { p.hp -= dmg; p.hitFlash = 30; G.shake = round(dmg);
@@ -1899,9 +1895,6 @@ function updateBoss() {
       b.vx -= Math.cos(ang)*4*b.spd; 
       b.vy -= Math.sin(ang)*4*b.spd;
     }
-  }
-  if (b.hp <= 0) {  // Boss death
-    onBossDeath();
   }
 }
 
@@ -2567,18 +2560,6 @@ function drawBoss() {
   ctx.arc(ex + b.r * 0.3, ey - b.r * 0.15, 4, 0, TAU);
   ctx.fill();
   ctx.restore();
-  // evilSpirit shockwave effect
-  if (b.atkEff > 0) {
-    const prog = 1 - b.atkEff / 24;
-    const r = b.atkRange * (0.3 + prog * 0.7);
-    ctx.globalAlpha = 0.5 * (1 - prog);
-    ctx.fillStyle = '#8bc34a';
-    ctx.beginPath(); ctx.arc(b.x, b.y, r, 0, TAU); ctx.fill();
-    ctx.globalAlpha = Math.min(1, 0.8 * (1 - prog) + 0.15);
-    ctx.strokeStyle = '#aed581'; ctx.lineWidth = 3;
-    ctx.beginPath(); ctx.arc(b.x, b.y, r, 0, TAU); ctx.stroke();
-    ctx.globalAlpha = 1;
-  }
 }
 
 function drawEvacPoint() {
@@ -2676,7 +2657,7 @@ function drawEpicZones() {
         ctx.stroke();
       }
       ctx.globalAlpha = 1;
-    } else if (z.kind === 'vortex') {  // 大漩涡：旋转涡纹
+    } else if (z.kind === 'vortex') {  // 漩涡：旋转涡纹
       ctx.globalAlpha = a * 0.85;
       ctx.strokeStyle = '#38a4fc'; ctx.lineWidth = 3;
       ctx.beginPath(); ctx.arc(z.x, z.y, z.r, 0, TAU); ctx.stroke();
@@ -2828,6 +2809,14 @@ function drawtraceEffects() {
       ctx.beginPath();
       ctx.arc(le.x, le.y, le.radius, le.ang - half, le.ang + half);
       ctx.lineTo(le.x, le.y); ctx.closePath(); ctx.stroke();
+    } else if (le.type === 'ripple') {  // 固定位置向外扩散的波纹
+      const prog = 1 - le.life / le.total;
+      const rr = le.r * (0.25 + 0.75 * prog);
+      ctx.globalAlpha = (1 - prog) * 0.4; ctx.fillStyle = le.color;
+      ctx.beginPath(); ctx.arc(le.x, le.y, rr, 0, TAU); ctx.fill();
+      ctx.globalAlpha = (1 - prog) * 0.9;
+      ctx.strokeStyle = le.color; ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.arc(le.x, le.y, rr, 0, TAU); ctx.stroke();
     } else if (le.type === 'circle') {
       if (!le.noStroke) {
         ctx.strokeStyle = le.color; ctx.lineWidth = 1;
