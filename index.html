@@ -266,9 +266,9 @@ button:hover{transform:scale(1.05)}
 
     <h3>3星法术（折线·增益）</h3>
     <p>
-      <b style="color:#ff6b35">火</b> 增伤 扩大范围 | <b style="color:#67f959">木</b> 增伤 治愈精灵<br>
-      <b style="color:#fdd835">土</b> 增伤 加固城墙 | <b style="color:#b84bf7">雷</b> 增伤 增加连击<br>
-      <b style="color:#e6fdff">冰</b> 增伤 强化控制 | <b style="color:#65b8fc">水</b> 增伤 强化治疗
+      <b style="color:#ff6b35">火</b> 增伤 扩大范围 | <b style="color:#67f959">木</b> 增伤 治愈造物<br>
+      <b style="color:#fdd835">土</b> 增伤 护盾加固 | <b style="color:#b84bf7">雷</b> 增伤 加量加速<br>
+      <b style="color:#e6fdff">冰</b> 增伤 强化控制 | <b style="color:#65b8fc">水</b> 增伤 治疗加成
     </p>
     <p style="font-size:11px;color:#888">消耗3 · 冷却5s · 持续10s · 击败Boss后解锁</p>
 
@@ -836,6 +836,8 @@ function tryCastSpell(gestureType) {
         G.player.shield += sh;
         G.player.shieldT = 600;
         addFloatText(G.player.x, G.player.y - G.player.r - 15, '护盾+' + sh, ELEMENTS.earth.color);
+      } else if (elem === 'thunder') { // 风驰电掣：移速+50%/层，由 move 按 buff 层数同步生效
+        addFloatText(G.player.x, G.player.y - G.player.r - 15, '加速', ELEMENTS.thunder.color);
       }
       G.castFx = { elem, timer: 30 };
       addParticles(G.player.x, G.player.y, ELEMENTS[elem].color, 25, 6, 40);
@@ -1095,7 +1097,6 @@ function getBuff(elem) { // 3星强化：每层 +50%，已直接加入伤害计�
   const b = G.buffs[elem];
   return b && b.stacks.length ? 1 + 0.5 * b.stacks.length : 1;
 }
-const getBuffMult = getBuff;   // 兼容旧调用名
 const getBuffFire = () => getBuff('fire');
 const getBuffThunder = () => getBuff('thunder');
 const getBuffEarth = () => getBuff('earth');
@@ -1178,7 +1179,7 @@ function castSpell(spell) {
     let ang = angle(target, p);
     G.projectiles.push({
       x:p.x, y:p.y, vx:Math.cos(ang)*6, vy:Math.sin(ang)*6, cost: spell.cost || 0,
-      dmg:spell.dmg, elem:spell.elem, r: spell.r * getBuffMult(spell.elem),
+      dmg:spell.dmg, elem:spell.elem, r: spell.r * getBuff(spell.elem),
       slow: spell.slow || false, splash: spell.splash || false, split: spell.split || false,
       life: spell.elem === 'earth' ? 360 : 120, target: target, ally: true,
       range: spell.range, traveled:0, fx:spell.fx||null,
@@ -1569,8 +1570,9 @@ function updatePlayer() {
     const len = Math.hypot(dx, dy);
     if (len > 1) { dx/=len; dy/=len; }
     // if (G.isDrawing) p.spd *= 0.8;
-    p.vx = lerp(p.vx, dx*p.spd, 0.2);  //插值函数-平滑速度
-    p.vy = lerp(p.vy, dy*p.spd, 0.2);
+    const tm = getBuffThunder();   // 雷buff：+50%移速/层，随buff同步生效/失效
+    p.vx = lerp(p.vx, dx*p.spd*tm, 0.2);  //插值函数-平滑速度
+    p.vy = lerp(p.vy, dy*p.spd*tm, 0.2);
     p.facing = Math.atan2(dy, dx);
   } else {
     p.vx *= 0.9; p.vy *= 0.9;
@@ -1725,6 +1727,11 @@ function onEnemyDeath(e) {
     spawnCrystal();
   }
 }
+// 狂暴弱点池：非免疫元素，进狂暴时缓存一次（不再每帧重建）
+function enrageWeakPool(finalPhase) {
+  const im = finalPhase.immune;
+  return ELEM_KEYS.filter(k => !(Array.isArray(im) ? im.includes(k) : im === k));
+}
 function updateBoss() {
   const b = G.boss; if (!b) return;
   if (b.hp <= 0) { onBossDeath(); return; }   // 血量归零立即结算
@@ -1736,7 +1743,6 @@ function updateBoss() {
   const range = b.atkRange;
   const hpPct = b.hp / b.maxHp;
   const len = phases.length;
-  const pool = ELEM_KEYS.filter(k => !(Array.isArray(phases[len - 1].immune) ? phases[len - 1].immune.includes(k) : phases[len - 1].immune === k));
 
  // Freeze check 冰封
   if (b.freezeT > 0) { 
@@ -1753,9 +1759,10 @@ function updateBoss() {
       b.phaseName = ph.phaseName;
       b.weak = ph.weak; b.resist = ph.resist;
       b.immune = ph.immune; b.elemMode = ph.elemMode;
-      if (i === len - 1) { // 狂暴初始弱点：首个非免疫元素，每10s轮换
+      if (i === len - 1) { // 狂暴初始弱点：首个非免疫元素，每10s轮换（池在此缓存）
         b.enrageIdx = 0;
-        b.weak = pool[0];
+        b.enragePool = enrageWeakPool(phases[len - 1]);
+        b.weak = b.enragePool[0];
         b.enrageWeakT = 600;
       }
       showFeedback('Boss进入：' + ph.phaseName + '！', '#ff6b35');
@@ -1769,6 +1776,7 @@ function updateBoss() {
   if (b.phaseNO === len - 1) {
     b.enrageWeakT--;
     if (b.enrageWeakT <= 0) {
+      const pool = b.enragePool;  // 进狂暴时已缓存
       b.enrageWeakT = 600;
       b.enrageIdx = ((b.enrageIdx || 0) + 1) % pool.length;
       b.weak = pool[b.enrageIdx];
@@ -1936,7 +1944,7 @@ function onBossDeath() {
     spawnEnhanceDrop(ult.id);
     G.enhanceDropped.push(ult.id);
   }
-  saveEnhanceState();
+  G.unsaved = true;
   if (count > 0 || ultRemaining.length) showFeedback('高级法术掉落！拾取以解锁', '#ffeb3b');
 }
 
@@ -2297,8 +2305,8 @@ function loadEnhanceState() {
   try {
     const data = JSON.parse(localStorage.getItem(ENHANCE_KEY));
     if (data) {
-      G.enhanceUnlocked = data.unlocked || [];
-      G.enhanceDropped = data.dropped || [];
+      G.enhanceUnlocked = data.unlocked;
+      G.enhanceDropped = data.dropped;
     }
   } catch(e) {}
 }
@@ -2322,7 +2330,7 @@ function updateEnhanceDrops() {
     if (dist(d, p) < d.r + p.r) {
       if (!G.enhanceUnlocked.includes(d.spellId)) {
         G.enhanceUnlocked.push(d.spellId);
-        saveEnhanceState();
+        G.unsaved = true;   // 未保存前放弃/重开即丢失
         const spell = ENHANCE_SPELLS.find(s => s.id === d.spellId) || Epic_SPELLS.find(s => s.id === d.spellId);
         showFeedback('解锁法术：' + spell.name + '·'+ELEMENTS[spell.elem].name, ELEMENTS[spell.elem].color);
         addParticles(d.x, d.y, ELEMENTS[spell.elem].color, 25, 5, 40);
@@ -3164,11 +3172,11 @@ function startGame() {
   G.score = 0; G.kills = 0;
   G.selectedMat = 'fire';
   G.materials = { fire:5, water:5, earth:5, wood:5, thunder:5, ice:5 };  // 初始材料
-  G.proficiency = {};  // 熟练度开局重置！
+  G.proficiency = {};  // 熟练度开局重置
   ELEM_KEYS.forEach(k => G.proficiency[k] = 0);
   G.boss = null; G.evacPoint = null;
   G.buffs = {}; G.spellCDs = {}; G.castFx = null; G.enhanceDrops = [];
-  G.enhanceUnlocked = []; G.enhanceDropped = []; // 强化法术不跨局保留
+  G.enhanceUnlocked = []; G.enhanceDropped = [];  // 新游戏从零开始，不读存档、不动存档
   G.unsaved = false;
   G.gesturePts = []; G.isDrawing = false; G.joy.active = false;
   G.shake = 0; G.fdbkT = 0;  // 震动计时器
@@ -3243,8 +3251,11 @@ function saveGame() {
       buffs: G.buffs,
       spellCDs: G.spellCDs,
       enhanceDrops: G.enhanceDrops,
+      enhanceUnlocked: G.enhanceUnlocked,
+      enhanceDropped: G.enhanceDropped,
     };
     localStorage.setItem(SAVE_KEY, JSON.stringify(data));
+    saveEnhanceState();   // 与存档同步写入法术元数据
     G.unsaved = false;
     const msg = document.getElementById('save-msg');
     msg.textContent = '已保存：第'+G.wave+'波 · 分数'+G.score;
@@ -3267,42 +3278,40 @@ function loadGame() {
     G.state = 'PLAYING';
     G.paused = false;
     G.player = data.player;
-    if (G.player.shield == null) G.player.shield = 0; 
-    if (G.player.shieldT == null) G.player.shieldT = 0;
-    G.enemies = data.enemies || [];
+    G.enemies = data.enemies;
     G.projectiles = [];
     G.particles = [];
-    G.crystals = data.crystals || [];
-    G.walls = data.walls || [];
-    G.healZones = data.healZones || [];
-    G.treeSpirits = data.treeSpirits || [];
+    G.crystals = data.crystals;
+    G.walls = data.walls;
+    G.healZones = data.healZones;
+    G.treeSpirits = data.treeSpirits;
     G.traceEffects = [];
     G.floatTexts = [];
     G.epicZones = []; G.pendingCasts = [];
-    G.wave = data.wave || 0;
-    G.waveActive = data.waveActive || false;
-    G.waveCD = data.waveCD || 60;
-    G.spawnQueue = data.spawnQueue || [];
-    G.score = data.score || 0;
-    G.kills = data.kills || 0;
+    G.wave = data.wave;
+    G.waveActive = data.waveActive;
+    G.waveCD = data.waveCD;
+    G.spawnQueue = data.spawnQueue;
+    G.score = data.score;
+    G.kills = data.kills;
     G.materials = data.materials;
-    G.selectedMat = data.selectedMat || 'fire';
-    G.proficiency = data.proficiency || {};
-    ELEM_KEYS.forEach(k => { if (G.proficiency[k] == null) G.proficiency[k] = 0; });
-    G.boss = data.boss || null;
-    G.evacPoint = data.evacPoint || null;
+    G.selectedMat = data.selectedMat;
+    G.proficiency = data.proficiency;
+    G.boss = data.boss;
+    G.evacPoint = data.evacPoint;
     G.buffs = {};
-    for (const k in (data.buffs || {})) {
+    for (const k in data.buffs) {   // 空层已存为 null，跳过
       const b = data.buffs[k];
-      const arr = Array.isArray(b?.stacks) ? b.stacks.filter(t => t > 0) : [];      // 新结构 {stacks:[每层剩余帧]}
-      if (arr.length) G.buffs[k] = { stacks: arr, healTick: b.healTick || 0 };
+      if (b && b.stacks.length) G.buffs[k] = { stacks: b.stacks, healTick: b.healTick };
     }
-    G.spellCDs = data.spellCDs || {};
+    G.spellCDs = data.spellCDs;
     G.castFx = null;
-    G.enhanceDrops = data.enhanceDrops || [];
+    G.enhanceDrops = data.enhanceDrops;
+    G.enhanceUnlocked = data.enhanceUnlocked;   // 存档里的法术原样恢复
+    G.enhanceDropped = data.enhanceDropped;
     G.unsaved = false;
     G.gesturePts = []; G.isDrawing = false; G.joy.active = false;
-    G.shake = 0; G.fdbkT = 0; G.time = data.time || 0;
+    G.shake = 0; G.fdbkT = 0; G.time = data.time;
     document.getElementById('start-screen').classList.add('hidden');
     document.getElementById('gameover-screen').classList.add('hidden');
     document.getElementById('pause-screen').classList.add('hidden');
