@@ -39,6 +39,12 @@ button:hover{transform:scale(1.05)}
 .mslot .ico{font-size:18px;line-height:1}
 .mslot .cnt{font-size:11px;color:#ccc;margin-top:1px}
 .mslot .key{position:absolute;top:-2px;right:-2px;font-size:9px;background:#333;border-radius:3px;padding:0 3px;color:#999}
+.is-touch .mslot .key{display:none}   /* 触摸设备兜底：隐藏1-6快捷键数字 */
+/* 4星法术冷却环：围绕材料框的同元素色细进度环，冷却完为整圈 */
+.mslot::after{content:'';position:absolute;inset:-5px;border-radius:13px;border:3px solid transparent;pointer-events:none;
+  background:conic-gradient(var(--gc) calc(var(--cd,0)*1turn), #0000 0) border-box;
+  -webkit-mask:linear-gradient(#000 0 0) padding-box, linear-gradient(#000 0 0);-webkit-mask-composite:xor;
+  mask:linear-gradient(#000 0 0) padding-box, linear-gradient(#000 0 0);mask-composite:exclude}
 #spell-fb{position:absolute;top:35%;left:50%;transform:translate(-50%,-50%);font-size:28px;font-weight:bold;text-shadow:0 0 10px currentColor;opacity:0;transition:opacity .3s;pointer-events:none;text-align:center;white-space:nowrap}
 #hint{position:absolute;bottom:68px;left:50%;transform:translateX(-50%);color:#666;font-size:12px}
 #buff-info{display:flex;gap:6px;align-items:center;pointer-events:none;max-width:42vw;overflow:hidden;flex-shrink:0}
@@ -274,9 +280,9 @@ button:hover{transform:scale(1.05)}
 
     <h3>4星法术（Z形·史诗）</h3>
     <p>
-      <b style="color:#ff6b35">火流星</b> 远程锁定目标 │ <b style="color:#67f959">小花仙</b> 嘲讽输出控制<br>
-      <b style="color:#fdd835">地崩山摧</b> 4段范围伤害 │ <b style="color:#b84bf7">柒之型</b> 8段弹跳伤害<br>
-      <b style="color:#e6fdff">绝对零度</b> 叠层高额爆发 │ <b style="color:#65b8fc">漩涡</b> 持续伤害牵引
+      <b style="color:#ff6b35">火</b> 远程锁定目标 │ <b style="color:#67f959">木</b> 嘲讽输出控制<br>
+      <b style="color:#fdd835">土</b> 四段范围伤害 │ <b style="color:#b84bf7">雷</b> 八段弹跳伤害<br>
+      <b style="color:#e6fdff">冰</b> 叠层高额爆发 │ <b style="color:#65b8fc">水</b> 持续伤害牵引
     </p>
     <p style="font-size:11px;color:#888">消耗4 · 冷却6s · 击败Boss后解锁</p>
   </div>
@@ -1125,6 +1131,7 @@ function updateBuffs() {
     G.castFx.timer--;
     if (G.castFx.timer <= 0) G.castFx = null;
   }
+  updateEpicRings();
 }
 
 function hitWall(x, y) {
@@ -3084,9 +3091,27 @@ function lerpColor(c1, c2, t) {
 }
 
 // ======================== HUD ========================
+if (navigator.maxTouchPoints > 0 && matchMedia('(hover: none)').matches)
+  document.documentElement.classList.add('is-touch');   // 手机/平板：隐藏快捷键数字
+const mslotByElem = {};
+let epicRingV = {};   // 冷却环缓存：值没变就不写样式
+
+function updateEpicRings() {  // 4星冷却环：进度 = 1 - cd/总CD；就绪=整圈，未解锁=0
+  for (const sp of Epic_SPELLS) {
+    const slot = mslotByElem[sp.elem]; if (!slot) continue;
+    const cd = G.spellCDs[sp.id] || 0;
+    const v = cd > 0 ? 1 - cd / sp.cd : (G.enhanceUnlocked.includes(sp.id) ? 1 : 0);
+    if (epicRingV[sp.id] === v) continue;
+    epicRingV[sp.id] = v;
+    slot.style.setProperty('--cd', v);
+  }
+}
+
 function buildMaterialUI() {
   const bar = document.getElementById('mat-bar');
   bar.innerHTML = '';
+  for (const k in mslotByElem) delete mslotByElem[k];
+  epicRingV = {};
   ELEM_KEYS.forEach((k, i) => {
     const el = ELEMENTS[k];
     const d = document.createElement('div');
@@ -3097,6 +3122,7 @@ function buildMaterialUI() {
     d.addEventListener('click', (e) => { e.stopPropagation(); selectMaterial(k); });
     d.addEventListener('touchstart', (e) => { e.preventDefault(); e.stopPropagation(); selectMaterial(k); }, {passive:false});
     bar.appendChild(d);
+    mslotByElem[k] = d;
   });
   updateMaterialUI();
 }
