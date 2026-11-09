@@ -1569,7 +1569,6 @@ function updatePlayer() {
   if (dx !== 0 || dy !== 0) {
     const len = Math.hypot(dx, dy);
     if (len > 1) { dx/=len; dy/=len; }
-    // if (G.isDrawing) p.spd *= 0.8;
     const tm = getBuffThunder();   // 雷buff：+50%移速/层，随buff同步生效/失效
     p.vx = lerp(p.vx, dx*p.spd*tm, 0.2);  //插值函数-平滑速度
     p.vy = lerp(p.vy, dy*p.spd*tm, 0.2);
@@ -1793,7 +1792,7 @@ function updateBoss() {
   const spdMult = phase.spdMult || 1;
   const spd = Math.max(0, B.spd * spdMult - ICE_SLOW * getBuffIce() * (b.slowStacks||0)
                           - (b.quakeSlowT > 0 ? QUAKE_SLOW : 0));
-  const rooted = b.rootT > 0 && b.phaseNO != len - 1;   // 束缚：速度清零（狂暴阶段免疫）
+  const rooted = b.rootT > 0 && b.phaseNO != len - 1;   // 束缚（狂暴阶段免疫）
   if (rooted) { b.rootT--; b.vx = 0; b.vy = 0; }
   b.moveT--;
   if (b.moveT <= 0) {  // Movement 随机游走
