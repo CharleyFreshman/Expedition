@@ -40,6 +40,7 @@ button:hover{transform:scale(1.05)}
 .mslot .cnt{font-size:11px;color:#ccc;margin-top:1px}
 .mslot .key{position:absolute;top:-2px;right:-2px;font-size:9px;background:#333;border-radius:3px;padding:0 3px;color:#999}
 .is-touch .mslot .key{display:none}   /* 触摸设备兜底：隐藏1-6快捷键数字 */
+@media (pointer:coarse), (hover:none), (max-width:700px){.mslot .key{display:none}}  /* 手机/窄屏兜底 */
 /* 4星法术冷却环：围绕材料框的同元素色细进度环，冷却完为整圈 */
 .mslot::after{content:'';position:absolute;inset:-5px;border-radius:13px;border:3px solid transparent;pointer-events:none;
   background:conic-gradient(var(--gc) calc(var(--cd,0)*1turn), #0000 0) border-box;
@@ -847,7 +848,7 @@ function tryCastSpell(gestureType) {
         G.player.shield += sh;
         G.player.shieldT = 600;
         addFloatText(G.player.x, G.player.y - G.player.r - 15, '护盾+' + sh, ELEMENTS.earth.color);
-      } else if (elem === 'thunder') { // 风驰电掣：移速+50%/层，由 move 按 buff 层数同步生效
+      } else if (elem === 'thunder') { // 风驰电掣：移速+50%/层，由 move 实现
         addFloatText(G.player.x, G.player.y - G.player.r - 15, '加速', ELEMENTS.thunder.color);
       }
       G.castFx = { elem, timer: 30 };
@@ -895,7 +896,7 @@ function castEpicSpell(spell) {
   addParticles(p.x, p.y, col, 40, 8, 50);
 
   switch (spell.type) {
-    case 'meteor': { // 火流星：1s前摇；以Boss为中心，无Boss则锁定最近敌人，自上而下坠落 r=2
+    case 'meteor': { // 火流星：1s前摇；以Boss为中心，无Boss则锁定最近敌人，自上而下坠落
       const target = G.boss || findNearestEnemy(p.x, p.y, Infinity);
       const tx = target ? target.x : p.x + Math.cos(p.facing) * 2 * UNIT;
       const ty = target ? target.y : p.y + Math.sin(p.facing) * 2 * UNIT;
@@ -908,7 +909,7 @@ function castEpicSpell(spell) {
         G.traceEffects.push({type:'circle', x:tx, y:ty, r, elem:'fire', life:30, color:col});
         addParticles(tx, ty, col, 40, 12, 50);
         addParticles(tx, ty, '#ffeb3b', 20, 8, 40);
-        G.shake = 14;
+        G.shake = 12;
       }});
       break;
     }
@@ -949,7 +950,7 @@ function castEpicSpell(spell) {
         if (next === G.boss) damageBoss(spell.dmg, 'thunder');
         else damageEnemy(next, spell.dmg, 'thunder');
         addParticles(next.x, next.y, THUNDER_TINTS.epic, 8, 5, 25);
-        G.shake = 5;
+        G.shake = 6;
         from = {x:next.x, y:next.y};
         last = next;
         if (++jumps < maxJumps) G.pendingCasts.push({t:spell.atkCD, fn:strike});
@@ -979,15 +980,15 @@ function castEpicSpell(spell) {
       };
       for (const e of G.enemies) { if (dist(e, p) < r + e.r) hit(e, false); }
       if (G.boss && dist(G.boss, p) < r + G.boss.r) hit(G.boss, true);
-      G.shake = 4;
+      G.shake = 10;
       break;
     }
     case 'vortex': { // 漩涡：玩家位置与facing方向2.5单位为圆心、r=2.5；牵引+秒伤，持续10s
-      const cx = p.x + Math.cos(p.facing) * spell.radius;
-      const cy = p.y + Math.sin(p.facing) * spell.radius;
+      const cx = p.x + Math.cos(p.facing) * UNIT;
+      const cy = p.y + Math.sin(p.facing) * UNIT;
       G.epicZones.push({kind:'vortex', x:cx, y:cy, r:spell.radius, dmg:spell.dmg,
         life:spell.dur, tickT:60});
-      G.shake = 5;
+      G.shake = 6;
       break;
     }
   }
@@ -1023,7 +1024,7 @@ function updatePendingCasts() {
 function spawnQuakeCracks(z) {
   const hw = z.side / 2;
   const born = z.maxLife - z.life;
-  const w = 6;  // 宽度固定
+  const w = 5;    // 固定宽度
   for (let k = 0; k < 5; k++) {
     const segs = [];
     let a = rand(0, 2*TAU), cx = 0, cy = 0;
@@ -1068,11 +1069,11 @@ function updateEpicZones() {
       }
       if (z.flashT > 0) z.flashT--;
     } else if (z.kind === 'vortex') {   //漩涡（圆形牵引+秒伤） 
-      const pull = t => {              // vy:圆心方向 1 / vx:切线方向 1，按敌人阻尼插值0.1折算
+      const pull = t => {              // vy:圆心方向 2 / vx:切线方向 1，按敌人阻尼插值0.1折算
         const dx = z.x - t.x, dy = z.y - t.y, d = Math.hypot(dx, dy) || 1;
         const rx = dx / d, ry = dy / d;
         t.vx += (rx * 1 + (-ry) * 1) * 0.1;
-        t.vy += (ry * 1 + rx * 1) * 0.1;
+        t.vy += (ry * 2 + rx * 2) * 0.1;
       };
       for (const e of G.enemies) { if (dist(e, z) < z.r + e.r) pull(e); }
       if (G.boss && dist(G.boss, z) < z.r + G.boss.r) pull(G.boss);
@@ -1303,7 +1304,7 @@ function castSpell(spell) {
         G.boss.vx += Math.cos(ang)*5; G.boss.vy += Math.sin(ang)*5;
       }
     }
-    G.shake = 4;
+    G.shake = 6;
     addProf('earth');
   } else if (spell.type === 'summon') {
     // 木：召唤木灵，血量20，嘲讽
@@ -1350,10 +1351,10 @@ function castSpell(spell) {
         addParticles(t.x2, t.y2, THUNDER_TINTS.chain, 8, 5, 25);
         addParticles(t.x2, t.y2, '#dbeafe', 4, 3, 20);
       }
-      G.shake = 8;
+      G.shake = 6;
     }
   } else if (spell.type === 'freeze') {
-    // 冰封：冰冻半径2单位内敌人，造成3伤害
+    // 冰冻三尺：冰冻半径2单位内敌人
     let hitAny = false;
     const buffIce = getBuffIce();
     G.traceEffects.push({type:'circle', x:p.x, y:p.y, r:spell.radius, elem:'ice', life:60, color:ELEMENTS['ice'].color});
@@ -1371,7 +1372,7 @@ function castSpell(spell) {
       G.boss.freezeT += buffIce * spell.freezeBoss;
       hitAny = true; addProf('ice');
     }
-    G.shake = 3;
+    G.shake = 6;
     if (!hitAny) {
       showFeedback('未命中', '#888');
       G.materials['ice'] += spell.cost;
@@ -1622,7 +1623,7 @@ function updateEnemy() {
     const spd = Math.max(0, t.spd - ICE_SLOW * buffIce * (e.slowStacks||0)
                             - (e.quakeSlowT > 0 ? QUAKE_SLOW : 0));
     const d = dist(e, p);
-    const dmg = e.dmg;
+    let dmg = e.dmg;   // const 无法赋值，护盾减伤后抛异常
 
     let target = p;          // findNearestPlayer() 多人联机
     for (const s of G.treeSpirits) {    // Taunt 嘲讽小怪: target nearest tree spirit
@@ -1750,7 +1751,7 @@ function updateBoss() {
   const B = BOSS_TYPES[b.type];
   const phases = B.phases;
   const phase = phases[b.phaseNO];
-  const dmg = b.dmg;
+  let dmg = b.dmg;
   const range = b.atkRange;
   const hpPct = b.hp / b.maxHp;
   const len = phases.length;
@@ -1779,7 +1780,7 @@ function updateBoss() {
       showFeedback('Boss进入：' + ph.phaseName + '！', '#ff6b35');
       addParticles(b.x, b.y, '#ff6b35', 20, 6, 40);
       b.summonCD = ph.summonCD; b.summonT = ph.summonCD;
-      G.shake = 16;
+      G.shake = 12;
       break;
     }
   }
@@ -1847,18 +1848,19 @@ function updateBoss() {
   b.facing = angle(p, b);
   b.atkCD--;
   if (b.atkCD <= 0) {
-    b.atkCD = phase.scatter ? B.atkCD*0.75 : B.atkCD;
+    b.atkCD = phase.scatter ? B.atkCD*0.8 : B.atkCD;
     const ang = b.facing;
     const shotElem = Array.isArray(b.elemMode) ? pick(b.elemMode) : b.elemMode;
     if (b.type === 'evilSpirit') {
       // 腐化树灵：固定位置扩散波纹
-      G.traceEffects.push({type:'ripple', x:b.x, y:b.y, r:range, total:30, life:30,
+      G.traceEffects.push({type:'ripple', x:b.x, y:b.y, r:range, total:45, life:45,
         color:'#8bc34a', elem:'wood'});
-      if (dist(b, p)-b.r < range + p.r && p.hitFlash <= 0) {
+      if (dist(b, p)-b.r < range + p.r && p.hitFlash <= 0) {  // 冲击波打不到木灵？
         if (p.shield > 0) { const a = Math.min(p.shield, dmg); p.shield -= a; }
         else { p.hp -= dmg; p.hitFlash = 30; G.shake = round(dmg);
+          const ka = angle(b, p); 
+          p.vx -= Math.cos(ka)*5; p.vy -= Math.sin(ka)*5;
           addFloatText(p.x, p.y-p.r-10, '-'+round(dmg), '#f44336');
-          const ka = angle(b, p); p.vx -= Math.cos(ka)*5; p.vy -= Math.sin(ka)*5;
         }
       }
       addParticles(b.x, b.y, '#8bc34a', 12, 5, 25);
@@ -2865,7 +2867,7 @@ function drawtraceEffects() {
       }
       ctx.stroke();
     } else if (le.type === 'hit') {
-      // 命中冲击波：扩散环 + 放射短线（花仙攻击的受击反馈）
+      // 花仙攻击命中反馈：扩散环 + 放射短线
       const prog = 1 - le.life / 14;
       const rr = (le.r || 14) + 8 + prog * 18;
       ctx.globalAlpha = (1 - prog) * 0.95;
@@ -2905,8 +2907,9 @@ function drawtraceEffects() {
       ctx.strokeStyle = '#b3e5fc'; ctx.lineWidth = 1.5;
       ctx.beginPath(); ctx.arc(le.x, le.y, rr * 0.62, 0, TAU); ctx.stroke();
     } else if (le.type === 'meteor') {
-      // 前摇1s = 从出现到坠地的整个过程（不是延迟1s才出现）
+      // 火流星：从出现到坠地的整个过程1s
       const prog = 1 - le.life / le.total;            // 0 → 1
+      const mtp = 1 + prog * 0.5;
       const dropY = le.startY + (le.y - le.startY) * Math.pow(prog, 1.4);   // 加速下落
       ctx.globalAlpha = a * 0.55;                     // 落点预警圈
       ctx.setLineDash([8, 8]);
@@ -2919,9 +2922,9 @@ function drawtraceEffects() {
       ctx.beginPath(); ctx.moveTo(le.x, dropY - 120); ctx.lineTo(le.x, dropY); ctx.stroke();
       ctx.shadowColor = le.color; ctx.shadowBlur = 30; // 陨石核
       ctx.fillStyle = '#fff3e0';
-      ctx.beginPath(); ctx.arc(le.x, dropY, 20, 0, TAU); ctx.fill();
+      ctx.beginPath(); ctx.arc(le.x, dropY, 20*mtp, 0, TAU); ctx.fill();
       ctx.fillStyle = '#ffb74d';
-      ctx.beginPath(); ctx.arc(le.x, dropY, 12, 0, TAU); ctx.fill();
+      ctx.beginPath(); ctx.arc(le.x, dropY, 12*mtp, 0, TAU); ctx.fill();
       ctx.shadowBlur = 0;
     } else {
       // Simple line (water)
