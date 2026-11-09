@@ -270,7 +270,7 @@ button:hover{transform:scale(1.05)}
       <b style="color:#fdd835">土</b> 增伤 护盾加固 | <b style="color:#b84bf7">雷</b> 增伤 加量加速<br>
       <b style="color:#e6fdff">冰</b> 增伤 强化控制 | <b style="color:#65b8fc">水</b> 增伤 治疗加成
     </p>
-    <p style="font-size:11px;color:#888">消耗3 · 冷却5s · 持续10s · 击败Boss后解锁</p>
+    <p style="font-size:11px;color:#888">消耗2 · 冷却3s · 持续10s · 击败Boss后解锁</p>
 
     <h3>4星法术（Z形·史诗）</h3>
     <p>
@@ -278,7 +278,7 @@ button:hover{transform:scale(1.05)}
       <b style="color:#fdd835">地崩山摧</b> 4段范围伤害 │ <b style="color:#b84bf7">柒之型</b> 8段弹跳伤害<br>
       <b style="color:#e6fdff">绝对零度</b> 叠层高额爆发 │ <b style="color:#65b8fc">漩涡</b> 持续伤害牵引
     </p>
-    <p style="font-size:11px;color:#888">消耗4 · 冷却5s · 击败Boss后解锁</p>
+    <p style="font-size:11px;color:#888">消耗4 · 冷却6s · 击败Boss后解锁</p>
   </div>
 </div>
 
@@ -337,26 +337,26 @@ const SPELLS = [
 const SPELL_MAP = {};
 SPELLS.forEach(s => { SPELL_MAP[s.elem + '|' + s.gesture] = s; });
 
-// === 3星(CHEVRON) 强化法术 === 消耗3材料, 10s持续, 5s冷却, 可叠加
+// === 3星(CHEVRON) 强化法术 === 消耗2材料, 10s持续, 3s冷却, 可叠加
 const ENHANCE_SPELLS = [
-  { id:'fire_chevron',    name:'炉火纯青', elem:'fire',    gesture:'CHEVRON', cost:3, dur:600, cd:300, desc:'火伤+50% 范围+50%' },
-  { id:'wood_chevron',    name:'万物生',   elem:'wood',    gesture:'CHEVRON', cost:3, dur:600, cd:300, desc:'木伤+50% 强化木灵' },
-  { id:'earth_chevron',   name:'不动如山', elem:'earth',   gesture:'CHEVRON', cost:3, dur:600, cd:300, desc:'土伤/护盾+50% 护盾' },
-  { id:'thunder_chevron', name:'风驰电掣', elem:'thunder', gesture:'CHEVRON', cost:3, dur:600, cd:300, desc:'雷伤+50% 跳数+50%' },
-  { id:'ice_chevron',     name:'寒霜降',   elem:'ice',     gesture:'CHEVRON', cost:3, dur:600, cd:300, desc:'冰伤+50% 控制+50%' },
-  { id:'water_chevron',   name:'川流不息', elem:'water',   gesture:'CHEVRON', cost:3, dur:600, cd:300, desc:'水伤/治疗+50% 回复' },
+  { id:'fire_chevron',    name:'炉火纯青', elem:'fire',    gesture:'CHEVRON', cost:2, dur:600, cd:180, desc:'火伤+50% 范围+50%' },
+  { id:'wood_chevron',    name:'万物生',   elem:'wood',    gesture:'CHEVRON', cost:2, dur:600, cd:180, desc:'木伤+50% 强化木灵' },
+  { id:'earth_chevron',   name:'不动如山', elem:'earth',   gesture:'CHEVRON', cost:2, dur:600, cd:180, desc:'土伤/护盾+50% 护盾' }, 
+  { id:'thunder_chevron', name:'风驰电掣', elem:'thunder', gesture:'CHEVRON', cost:2, dur:600, cd:180, desc:'雷伤+50% 跳数+50%' },
+  { id:'ice_chevron',     name:'寒霜降',   elem:'ice',     gesture:'CHEVRON', cost:2, dur:600, cd:180, desc:'冰伤+50% 控制+50%' },
+  { id:'water_chevron',   name:'川流不息', elem:'water',   gesture:'CHEVRON', cost:2, dur:600, cd:180, desc:'水伤/治疗+50% 回复' },
 ];
 const ENHANCE_MAP = {};
 ENHANCE_SPELLS.forEach(s => { ENHANCE_MAP[s.elem + '|' + s.gesture] = s; });
 
-// === 4星(ZIGZAG) 史诗法术 === 消耗4材料, 冷却5s, 需解锁
+// === 4星(ZIGZAG) 史诗法术 === 消耗4材料, 冷却6s, 需解锁
 const Epic_SPELLS = [
-  { id:'fire_zig',    name:'火流星',          elem:'fire',    gesture:'ZIGZAG', cost:4, type:'meteor',   dmg:8, radius:2*UNIT, castTime:60, cd:300 },
-  { id:'wood_zig',    name:'花仙下凡',          elem:'wood',    gesture:'ZIGZAG', cost:4, type:'flower',   hp:40, dmg:2, rootDmg:1, atkCD:60, atkRange:2*UNIT, spd:2.5, cd:300 },
-  { id:'earth_zig',   name:'地崩山摧',        elem:'earth',   gesture:'ZIGZAG', cost:4, type:'quake',    dmg:4, times:4, side:4*UNIT, atkCD:120, cd:300 },
-  { id:'thunder_zig', name:'雷の呼吸·柒之型', elem:'thunder', gesture:'ZIGZAG', cost:4, type:'thunder7', dmg:4, atkRange:3*UNIT, maxJumps:8, atkCD:30, cd:300 },
-  { id:'ice_zig',     name:'绝对零度',        elem:'ice',     gesture:'ZIGZAG', cost:4, type:'blizzard', dmg:4, radius:2.5*UNIT, freezeMon:3*60, freezeBoss:3*60, cd:300 },
-  { id:'water_zig',   name:'漩涡',          elem:'water',   gesture:'ZIGZAG', cost:4, type:'vortex',   dmg:1, dur:600, radius:2.5*UNIT, cd:300 },
+  { id:'fire_zig',    name:'火流星',          elem:'fire',    gesture:'ZIGZAG', cost:4, cd:360, type:'meteor',   dmg:8, radius:2*UNIT, castTime:60 },
+  { id:'wood_zig',    name:'花仙下凡',          elem:'wood',    gesture:'ZIGZAG', cost:4, cd:360, type:'flower',   hp:40, dmg:2, rootDmg:1, atkCD:60, atkRange:2*UNIT, spd:2.5 },
+  { id:'earth_zig',   name:'地崩山摧',        elem:'earth',   gesture:'ZIGZAG', cost:4, cd:360, type:'quake',    dmg:4, times:4, side:4*UNIT, atkCD:120 },
+  { id:'thunder_zig', name:'雷の呼吸·柒之型', elem:'thunder', gesture:'ZIGZAG', cost:4, cd:360, type:'thunder7', dmg:4, atkRange:3*UNIT, maxJumps:8, atkCD:30 },
+  { id:'ice_zig',     name:'绝对零度',        elem:'ice',     gesture:'ZIGZAG', cost:4, cd:360, type:'blizzard', dmg:4, radius:2.5*UNIT, freezeMon:3*60, freezeBoss:3*60 },
+  { id:'water_zig',   name:'漩涡',          elem:'water',   gesture:'ZIGZAG', cost:4, cd:360, type:'vortex',   dmg:1, dur:600, radius:2.5*UNIT },
 ];
 const Epic_MAP = {};
 Epic_SPELLS.forEach(s => { Epic_MAP[s.elem + '|' + s.gesture] = s; });
@@ -823,7 +823,12 @@ function tryCastSpell(gestureType) {
       const elem = spell.elem;
       if (!G.buffs[elem]) G.buffs[elem] = { stacks: [], healTick: 0 };
       const b = G.buffs[elem];
-      b.stacks.push(spell.dur);   // 每层独立计时，效果可叠加
+      // 叠层上限2：满层时刷新剩余时间最短的一层，每层独立计时
+      if (b.stacks.length >= 2) {
+        b.stacks[b.stacks[0] <= b.stacks[1] ? 0 : 1] = spell.dur;
+      } else {
+        b.stacks.push(spell.dur);
+      }
       if (elem === 'wood') {        // 万物生：强化木灵和伤害
         b.healTick = 300;
         healAllTreeSpirits();
@@ -2170,8 +2175,8 @@ function updateTreeSpirits() {  // 更新木灵（2星木灵 / 4星小花仙）
           G.traceEffects.push({type:'hit', x:target.x, y:target.y, r:target.r, life:14,
             color: bindMode ? '#66bb6a' : '#f06292'});   // 命中受击反馈
           if (bindMode) {
-            if (target === G.boss) { damageBoss(s.rootDmg, 'wood'); target.rootT = 1*60; }
-            else { damageEnemy(target, s.rootDmg, 'wood'); target.rootT = 2*60; }
+            if (target === G.boss) { damageBoss(s.rootDmg, 'wood'); target.rootT += 1*60; }
+            else { damageEnemy(target, s.rootDmg, 'wood'); target.rootT += 2*60; }
             addFloatText(target.x, target.y-target.r-20, '束缚', '#66bb6a');
             G.traceEffects.push({type:'ring', x:target.x, y:target.y, r:target.r+8,
               elem:'wood', life:30, color:ELEMENTS.wood.color});
