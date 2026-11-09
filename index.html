@@ -3142,7 +3142,8 @@ function updateMaterialUI() {
 function updateHUD() {
   const p = G.player;
   if (!p) return;
-  if (G.time % 4 !== 0) return;   // 每4帧刷新一次HUD，减少DOM写入
+  if (G.time % 10 !== 0) return;   // 每10帧刷新一次HUD，减少DOM写入
+  if (G.time % 20 === 0) updateMaterialUI();   // 材料剩余量每20帧同步一次
   const pct = clamp(p.hp/p.maxHp*100, 0, 100);
   const hpBar = document.getElementById('hp-bar');
   hpBar.style.width = pct + '%';
