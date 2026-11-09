@@ -263,8 +263,8 @@ button:hover{transform:scale(1.05)}
     <p>
       <b style="color:#ff6b35">火</b> 扇形区域 高额伤害<br>
       <b style="color:#67f959">木</b> 召唤木灵 嘲讽输出<br>
-      <b style="color:#fdd835">土</b> 城墙防御 弹反敌人<br>
-      <b style="color:#b84bf7">雷</b> 追踪目标 连锁反应<br>
+      <b style="color:#fdd835">土</b> 城墙守护 弹反敌人<br>
+      <b style="color:#b84bf7">雷</b> 选中目标 瞬时伤害<br>
       <b style="color:#e6fdff">冰</b> 冰冻敌人 造成伤害<br>
       <b style="color:#65b8fc">水</b> 治疗领域 持续回血
     </p>
@@ -281,7 +281,7 @@ button:hover{transform:scale(1.05)}
     <h3>4星法术（Z形·史诗）</h3>
     <p>
       <b style="color:#ff6b35">火</b> 远程锁定目标 │ <b style="color:#67f959">木</b> 嘲讽输出控制<br>
-      <b style="color:#fdd835">土</b> 四段范围伤害 │ <b style="color:#b84bf7">雷</b> 八段弹跳伤害<br>
+      <b style="color:#fdd835">土</b> 四段范围伤害 │ <b style="color:#b84bf7">雷</b> 八段连锁伤害<br>
       <b style="color:#e6fdff">冰</b> 叠层高额爆发 │ <b style="color:#65b8fc">水</b> 持续伤害牵引
     </p>
     <p style="font-size:11px;color:#888">消耗4 · 冷却6s · 击败Boss后解锁</p>
@@ -335,7 +335,7 @@ const SPELLS = [
   // === CIRCLE (2星) 范围法术 ===
   { id:'fire_circle',  name:'朱雀扇',   elem:'fire',    gesture:'CIRCLE', cost:2, type:'fan',    dmg:4, radius:3*UNIT, radian:Math.PI*2/3 },
   { id:'wood_circle',  name:'木灵召唤', elem:'wood',    gesture:'CIRCLE', cost:2, type:'summon',   spiritHp:20, dmg:2, atkCD:120, atkRange:1*UNIT }, 
-  { id:'earth_circle', name:'守护之墙',     elem:'earth',   gesture:'CIRCLE', cost:2, type:'wall',   size:1*UNIT, wallHp:40, dur:9999 },
+  { id:'earth_circle', name:'守护之墙',     elem:'earth',   gesture:'CIRCLE', cost:2, type:'wall',   size:1*UNIT, wallHp:40 },
   { id:'thunder_circle',name:'雷の呼吸·壹之型', elem:'thunder', gesture:'CIRCLE', cost:2, type:'chain',  dmg:3, range:2*UNIT, maxJumps:6 },
   { id:'ice_circle',   name:'冰冻三尺',     elem:'ice',     gesture:'CIRCLE', cost:2, type:'freeze',   dmg:2, radius:2*UNIT, freezeMon:3*60, freezeBoss:3*60 },
   { id:'water_circle', name:'春风化雨', elem:'water',   gesture:'CIRCLE', cost:2, type:'healzone', radius:1.5*UNIT, healRate:10, dur:5*60 },
@@ -357,12 +357,12 @@ ENHANCE_SPELLS.forEach(s => { ENHANCE_MAP[s.elem + '|' + s.gesture] = s; });
 
 // === 4星(ZIGZAG) 史诗法术 === 消耗4材料, 冷却6s, 需解锁
 const Epic_SPELLS = [
-  { id:'fire_zig',    name:'火流星',          elem:'fire',    gesture:'ZIGZAG', cost:4, cd:360, type:'meteor',   dmg:8, radius:2*UNIT, castTime:60 },
-  { id:'wood_zig',    name:'花仙下凡',          elem:'wood',    gesture:'ZIGZAG', cost:4, cd:360, type:'flower',   hp:40, dmg:2, rootDmg:1, atkCD:60, atkRange:2*UNIT, spd:2.5 },
+  { id:'fire_zig',    name:'火流星',         elem:'fire',    gesture:'ZIGZAG', cost:4, cd:360, type:'meteor',   dmg:8, radius:2*UNIT, castTime:60 },
+  { id:'wood_zig',    name:'花仙下凡',        elem:'wood',    gesture:'ZIGZAG', cost:4, cd:360, type:'flower',   hp:40, dmg:2, rootDmg:1, atkCD:60, atkRange:2*UNIT, spd:2.5 },
   { id:'earth_zig',   name:'地崩山摧',        elem:'earth',   gesture:'ZIGZAG', cost:4, cd:360, type:'quake',    dmg:4, times:4, side:4*UNIT, atkCD:120 },
-  { id:'thunder_zig', name:'雷の呼吸·柒之型', elem:'thunder', gesture:'ZIGZAG', cost:4, cd:360, type:'thunder7', dmg:4, atkRange:3*UNIT, maxJumps:8, atkCD:30 },
+  { id:'thunder_zig', name:'雷の呼吸·柒之型', elem:'thunder',  gesture:'ZIGZAG', cost:4, cd:360, type:'thunder7', dmg:4, atkRange:3*UNIT, maxJumps:8, atkCD:30 },
   { id:'ice_zig',     name:'绝对零度',        elem:'ice',     gesture:'ZIGZAG', cost:4, cd:360, type:'blizzard', dmg:4, radius:2.5*UNIT, freezeMon:3*60, freezeBoss:3*60 },
-  { id:'water_zig',   name:'漩涡',          elem:'water',   gesture:'ZIGZAG', cost:4, cd:360, type:'vortex',   dmg:1, dur:600, radius:2.5*UNIT },
+  { id:'water_zig',   name:'漩涡',           elem:'water',   gesture:'ZIGZAG', cost:4, cd:360, type:'vortex',   dmg:1, dur:600, radius:2.5*UNIT },
 ];
 const Epic_MAP = {};
 Epic_SPELLS.forEach(s => { Epic_MAP[s.elem + '|' + s.gesture] = s; });
@@ -1288,7 +1288,7 @@ function castSpell(spell) {
   } else if (spell.type === 'wall') {
     // 土：正方形城墙
     const wallHp = spell.wallHp * getBuffEarth();
-    G.walls.push({x:p.x, y:p.y, size:spell.size, hp:wallHp, maxHp:wallHp, life:spell.dur});
+    G.walls.push({x:p.x, y:p.y, size:spell.size, hp:wallHp, maxHp:wallHp});
     for (const e of G.enemies) {    // 推斥敌人 size:100 / 10
       const d = dist(e, p);
       if (d < spell.size/2 + e.r + 10) {
@@ -1314,7 +1314,7 @@ function castSpell(spell) {
     });
     addParticles(p.x, p.y, '#66bb6a', 25, 4, 40);
   } else if (spell.type === 'chain') {
-    // 雷链：连锁反应，击中距离3单位内不同敌人，继续直到次数达到上限
+    // 雷链：瞬时伤害，击中距离3单位内不同敌人，继续直到次数达到上限
     const targets = [];
     const hit = new Set();
     let from = {x:p.x, y:p.y};
@@ -2116,8 +2116,7 @@ function updateFloatTexts() {
 function updateWalls() {
   for (let i = G.walls.length-1; i >= 0; i--) {
     const w = G.walls[i];
-    w.life--;
-    if (w.hp <= 0 || w.life <= 0) {
+    if (w.hp <= 0) {
       addParticles(w.x, w.y, '#8d6e63', 15, 4, 30);
       G.walls.splice(i, 1);
     }
