@@ -172,7 +172,7 @@ button:hover{transform:scale(1.05)}
   <div class="btn-row">
     <button id="resume-btn" class="btn-green">继续</button>
     <button id="save-btn" class="btn-yellow">保存</button>
-    <button id="quit-btn" class="btn-red">返回</button>
+    <button id="quit-btn" class="btn-red">退出</button>
   </div>
   <div id="save-msg" class="save-msg hidden"></div>
   <div id="quit-confirm" class="quit-confirm hidden">
@@ -358,9 +358,9 @@ ENHANCE_SPELLS.forEach(s => { ENHANCE_MAP[s.elem + '|' + s.gesture] = s; });
 
 // === 4星(ZIGZAG) 史诗法术 === 消耗4材料, 冷却6s, 需解锁
 const Epic_SPELLS = [
-  { id:'fire_zig',    name:'火流星',         elem:'fire',    gesture:'ZIGZAG', cost:4, cd:360, type:'meteor',   dmg:8, radius:2*UNIT, castTime:60 },
+  { id:'fire_zig',    name:'陨星',         elem:'fire',    gesture:'ZIGZAG', cost:4, cd:360, type:'meteor',   dmg:8, radius:2*UNIT, castTime:60 },
   { id:'wood_zig',    name:'花仙下凡',        elem:'wood',    gesture:'ZIGZAG', cost:4, cd:360, type:'flower',   hp:40, dmg:2, rootDmg:1, atkCD:60, atkRange:2*UNIT, spd:2.5 },
-  { id:'earth_zig',   name:'地崩山摧',        elem:'earth',   gesture:'ZIGZAG', cost:4, cd:360, type:'quake',    dmg:4, times:4, side:4*UNIT, atkCD:120 },
+  { id:'earth_zig',   name:'地崩山摧',        elem:'earth',   gesture:'ZIGZAG', cost:4, cd:360, type:'quake',    dmg:4, times:4, size:4*UNIT, atkCD:120 },
   { id:'thunder_zig', name:'雷の呼吸·柒之型', elem:'thunder',  gesture:'ZIGZAG', cost:4, cd:360, type:'thunder7', dmg:4, atkRange:3*UNIT, maxJumps:8, atkCD:30 },
   { id:'ice_zig',     name:'绝对零度',        elem:'ice',     gesture:'ZIGZAG', cost:4, cd:360, type:'blizzard', dmg:4, radius:2.5*UNIT, freezeMon:3*60, freezeBoss:3*60 },
   { id:'water_zig',   name:'漩涡',           elem:'water',   gesture:'ZIGZAG', cost:4, cd:360, type:'vortex',   dmg:1, dur:600, radius:2.5*UNIT },
@@ -369,11 +369,11 @@ const Epic_MAP = {};
 Epic_SPELLS.forEach(s => { Epic_MAP[s.elem + '|' + s.gesture] = s; });
 
 const ENEMY_TYPES = {
-  slime:   { name:'史莱姆', elem:'water',   hp:3, spd:1.0, dmg:4, r:13, drop:'water',   ai:'chase'  },
-  wolf:    { name:'土野狼',   elem:'earth',   hp:3, spd:1.5, dmg:3, r:14, drop:'earth',   ai:'charge' },
+  slime:   { name:'史莱姆', elem:'water',   hp:3, spd:1.0, dmg:4, r:14, drop:'water',   ai:'chase'  },
+  wolf:    { name:'土野狼',   elem:'earth',   hp:3, spd:1.5, dmg:3, r:15, drop:'earth',   ai:'charge' },
   bat:     { name:'酷雷蝠',   elem:'thunder', hp:3, spd:2.0, dmg:2, r:12, drop:'thunder', ai:'swarm'  },
   spirit:  { name:'树精',     elem:'wood',    hp:6, spd:.75,  dmg:4, r:20, drop:'wood',    ai:'ranged', atkCD:120, atkRange:3*UNIT, elite:true },
-  firebug: { name:'熔岩虫',   elem:'fire',    hp:3, spd:1.0, dmg:4, r:15, drop:'fire',    ai:'swarm'  },
+  firebug: { name:'熔岩虫',   elem:'fire',    hp:3, spd:1.0, dmg:4, r:13, drop:'fire',    ai:'swarm'  },
   iceshard:{ name:'雪怪',    elem:'ice',     hp:4, spd:1.25, dmg:3, r:16, drop:'ice',     ai:'charge'  },
 };
 
@@ -397,25 +397,25 @@ const BOSS_TYPES = {
   fairy: {
     name: '堕落妖精', hp: 60, spd: 1.0, dmg: 6, r: 30, atkCD: 60, atkRange:6*UNIT,
     phases: [
-      { hpPct: 1.0,  weak: 'water',  elemMode: 'fire',   resist: 'wood',  phaseName: '火',     immune: '',   summon: 'firebug', summonCD: 360, spdMult: 1.0 },
-      { hpPct: 0.60, weak: 'earth',  elemMode: 'thunder', resist: 'ice',   phaseName: '雷',   immune: '',   summon: 'bat',     summonCD: 300, spdMult: 1.2 }, 
-      { hpPct: 0.20, weak: '',  resist: '',   phaseName: '狂暴',     elemMode: ['fire', 'thunder'],    immune: ['wood', 'ice'],   summon: 'iceshard',  summonCD: 240, spdMult: 1.5, scatter: true },
+      { hpPct: 1.0,  weak: 'earth',  elemMode: 'thunder', resist: 'ice',   phaseName: '雷',    immune: '',   summon: 'bat', summonCD: 360, spdMult: 1.0 },
+      { hpPct: 0.60, weak: 'wood',   elemMode: 'earth', resist: 'thunder',  phaseName: '土',    immune: '',   summon: 'wolf',     summonCD: 300, spdMult: 1.2 }, 
+      { hpPct: 0.20, weak: '',  resist: '',   phaseName: '狂暴',     elemMode: ['thunder', 'earth'],    immune: ['ice', 'thunder'],   summon: 'iceshard',  summonCD: 240, spdMult: 1.5, scatter: true },
     ],
   },
   golem: {
-    name: '深渊魔物', hp: 60, spd: 0.75, dmg: 8, r: 40, atkCD: 60, atkRange:6*UNIT,
+    name: '深渊魔像', hp: 60, spd: 0.75, dmg: 8, r: 40, atkCD: 60, atkRange:6*UNIT,
     phases: [
-      { hpPct: 1.0,  weak: 'thunder',  elemMode: 'ice',   resist: 'water', phaseName: '冰', immune: '', summon: 'iceshard', summonCD: 360, spdMult: 1.0 },
-      { hpPct: 0.65, weak: 'ice',   elemMode: 'water',    resist: 'fire',  phaseName: '水', immune: '',  summon: 'slime',    summonCD: 300, spdMult: 1.2 },
-      { hpPct: 0.30, weak: '',        resist: '',      phaseName: '狂暴',   elemMode: ['ice', 'water'],    immune: ['water', 'fire'], summon: 'wolf',   summonCD: 240, spdMult: 1.5, atkRange:3*UNIT, },
+      { hpPct: 1.0,  weak: 'ice',  elemMode: 'water',   resist: 'fire',  phaseName: '水', immune: '',  summon: 'slime',   summonCD: 360, spdMult: 1.0 },
+      { hpPct: 0.65,  weak: 'thunder',  elemMode: 'ice',   resist: 'water', phaseName: '冰', immune: '', summon: 'iceshard', summonCD: 300, spdMult: 1.2 },
+      { hpPct: 0.30, weak: '',        resist: '',      phaseName: '狂暴',   elemMode: ['water', 'ice'],    immune: ['fire', 'water'], summon: 'spirit',   summonCD: 240, spdMult: 1.5, atkRange:3*UNIT, },
     ],
   },
   evilSpirit:{
     name: '腐化树灵', hp: 60, spd: 1.2, dmg: 6, r: 25, atkCD: 90, atkRange:1*UNIT,
     phases: [
       { hpPct: 1.0,  weak: 'fire',  elemMode: 'wood',  resist: 'earth', phaseName: '木',  immune: '', summon: 'spirit', summonCD: 360, spdMult: 1.0 },
-      { hpPct: 0.70, weak: 'wood',   elemMode: 'earth', resist: 'thunder',  phaseName: '土', immune: '',  summon: 'wolf',    summonCD: 300, spdMult: 1.2 },
-      { hpPct: 0.40, weak: '',        resist: '',      phaseName: '狂暴',   elemMode: ['wood', 'earth'],    immune: ['earth', 'thunder'], summon: 'spirit',   summonCD: 240, spdMult: 1.5, scatter: true },
+      { hpPct: 0.70, weak: 'water',  elemMode: 'fire',   resist: 'wood',  phaseName: '火', immune: '',  summon: 'firebug',    summonCD: 300, spdMult: 1.2 },
+      { hpPct: 0.40, weak: '',        resist: '',      phaseName: '狂暴',   elemMode: ['wood', 'fire'],    immune: ['earth', 'wood'], summon: 'wolf',   summonCD: 240, spdMult: 1.5 },
     ],
   }
 };
@@ -654,8 +654,10 @@ const G = {
   pendingCasts: [], 
 };
 
-const SAVE_KEY = 'element_expedition_save';
-const ADV_KEY = 'element_expedition_adv';
+// 存档命名空间：覆盖层可在本脚本之前设置 window.GAME_NS 隔离存档（默认空，与原键一致）
+const NS = window.GAME_NS || '';
+const SAVE_KEY = NS + 'element_expedition_save';
+const ADV_KEY = NS + 'element_expedition_adv';
 
 function resize() {
   W = canvas.width = window.innerWidth;
@@ -666,7 +668,7 @@ window.addEventListener('orientationchange', () => setTimeout(resize, 100));
 resize();
 
 // ======================== 实体创建 ========================
-function createPlayer() {
+function createPlayer() {  //创建玩家
   return { x:W/2, y:H/2, vx:0, vy:0, r:16, hp:100, maxHp:100, facing:0, spd:2.5,
            slowT:0, rootT:0, freezeT:0, hitFlash:0, shield:0, shieldT:0};
 }
@@ -700,8 +702,9 @@ function spawnHealPack() {
   const ang = rand(0, TAU);
   const d = rand(80, 160);
   G.healPacks.push({
-    x: p.x + Math.cos(ang)*d, y: p.y + Math.sin(ang)*d,
-    r: 12, pulse: 0
+    x: Math.min(W - 60, Math.max(60, p.x + Math.cos(ang)*d)),
+    y: Math.min(H - 60, Math.max(60, p.y + Math.sin(ang)*d)),
+    r: 10, pulse: 0
   });
 }
 
@@ -896,7 +899,7 @@ function castEpicSpell(spell) {
   addParticles(p.x, p.y, col, 40, 8, 50);
 
   switch (spell.type) {
-    case 'meteor': { // 火流星：1s前摇；以Boss为中心，无Boss则锁定最近敌人，自上而下坠落
+    case 'meteor': { // 陨星：1s前摇；以Boss为中心，无Boss则锁定最近敌人，自上而下坠落
       const target = G.boss || findNearestEnemy(p.x, p.y, Infinity);
       const tx = target ? target.x : p.x + Math.cos(p.facing) * 2 * UNIT;
       const ty = target ? target.y : p.y + Math.sin(p.facing) * 2 * UNIT;
@@ -930,10 +933,11 @@ function castEpicSpell(spell) {
       addParticles(p.x, p.y, col, 25, 4, 40);
       break;
     }
-    case 'quake': { // 地崩山摧：玩家为中心边长4单位方形，每2s一次地裂，伤害4→1
-      const dur = spell.atkCD * spell.times;
-      G.epicZones.push({kind:'quake', x:p.x, y:p.y, side:spell.side,
-        dmg:spell.dmg, times:spell.times, atkCD:spell.atkCD, tickT:0, life:dur, maxLife:dur, tickNo:0,
+    case 'quake': { // 地崩山摧：玩家为中心方形，每次伤害-1（6→1），times受土强化
+      const Times = Math.round(spell.times * getBuffEarth());
+      const dur = spell.atkCD * Times;
+      G.epicZones.push({kind:'quake', x:p.x, y:p.y, size:spell.size,
+        baseDmg:spell.dmg, dmg:spell.dmg, times:Times, atkCD:spell.atkCD, tickT:0, life:dur, maxLife:dur, tickNo:0,
         flashT:0, cracks:[]});
       G.shake = 10;
       break;
@@ -958,16 +962,16 @@ function castEpicSpell(spell) {
       strike();
       break;
     }
-    case 'blizzard': { // 绝对零度：r=3；未冰冻→等价冰冻三尺二星(4伤+冰冻)，已冰冻→ 4 x 剩余冰冻秒数
+    case 'blizzard': { // 绝对零度：r=3；未冰冻→(4伤+冰冻)，已冰冻→ 4 x 剩余冰冻秒数（向上取整）
       const r = spell.radius;
       const buffIce = getBuffIce();
       G.traceEffects.push({type:'frost', x:p.x, y:p.y, r, total:60, life:60, color:col});
       const hit = (t, isBoss) => {
-        if (isBoss && getDamageMultiplier('ice', G.boss) === 0) {   // Boss免疫冰：不结算伤害也不冰冻
+        if (isBoss && getDamageMultiplier('ice', G.boss) === 0) {   // Boss免疫冰：不伤害也不冰冻
           addFloatText(G.boss.x, G.boss.y - G.boss.r - 15, '免疫！', '#888');
           return;
         }
-        if (t.freezeT > 0) {          // 已冰冻：伤害正比于累计冰冻时间（秒向上取整）
+        if (t.freezeT > 0) {
           const sec = Math.ceil(t.freezeT / 60);
           const dmg = spell.dmg * Math.max(1, sec);
           if (isBoss) damageBoss(dmg, 'ice'); else damageEnemy(t, dmg, 'ice');
@@ -1022,16 +1026,16 @@ function updatePendingCasts() {
 
 // 地崩山摧：每震一次生成一批不规则裂纹
 function spawnQuakeCracks(z) {
-  const hw = z.side / 2;
+  const hw = z.size / 2;
   const born = z.maxLife - z.life;
   const w = 5;    // 固定宽度
-  for (let k = 0; k < 5; k++) {
+  for (let k = 0; k < 4; k++) {
     const segs = [];
     let a = rand(0, 2*TAU), cx = 0, cy = 0;
     const len = hw * rand(0.5, 1.0);
-    for (let s = 0; s < 5; s++) {
+    for (let s = 0; s < 4; s++) {
       a += rand(-0.5, 0.5);
-      const step = len / 5;
+      const step = len / 4;
       cx += Math.cos(a) * step;
       cy += Math.sin(a) * step;
       segs.push({x:cx, y:cy});
@@ -1046,25 +1050,27 @@ function updateEpicZones() {
   for (let i = G.epicZones.length - 1; i >= 0; i--) {
     const z = G.epicZones[i];
     z.life--;
-    if (z.kind === 'quake') {   //地崩山摧（方形多段） 
+    if (z.kind === 'quake') {  //地崩山摧：dmg 按当前土强化同步：衰减按 tickNo，倍率随 buff 升降
       if (--z.tickT <= 0 && z.times > 0) {
-        const hw = z.side / 2;
+        z.dmg = Math.max(1, Math.floor((z.baseDmg - z.tickNo++) * getBuffEarth()));
+        const hw = z.size / 2;
         const inArea = t => Math.abs(t.x - z.x) < hw + t.r && Math.abs(t.y - z.y) < hw + t.r;
         for (const e of G.enemies) {
-          if (inArea(e)) { damageEnemy(e, z.dmg, 'earth'); e.quakeSlowT = QUAKE_DECAY; }
+          if (inArea(e)) { damageEnemy(e, z.dmg, 'earth'); e.quakeSlowT = QUAKE_DECAY;
+            addFloatText(e.x, e.y - e.r - 20, '减速', '#81d4fa');
+          }
         }
         if (G.boss && inArea(G.boss)) {
+          damageBoss(z.dmg, 'earth');
           if (getDamageMultiplier('earth', G.boss) !== 0) {
-            damageBoss(z.dmg, 'earth'); G.boss.quakeSlowT = QUAKE_DECAY;
-          } else {
-            addFloatText(G.boss.x, G.boss.y - G.boss.r - 15, '免疫！', '#888');
+            G.boss.quakeSlowT = QUAKE_DECAY;
+            addFloatText(G.boss.x, G.boss.y - G.boss.r - 20, '减速', '#81d4fa');
           }
         }
         addParticles(z.x + rand(-hw, hw), z.y + rand(-hw, hw), '#fdd835', 6, 4, 20);
-        z.times--; z.dmg--; z.tickT = z.atkCD;
-        z.tickNo = (z.tickNo || 0) + 1;
+        z.times--; z.tickT = z.atkCD;
         spawnQuakeCracks(z);
-        z.flashT = 30;                  // 每次震击整块填充持续30帧
+        z.flashT = 30;
         G.shake = round(4 + z.dmg);
       }
       if (z.flashT > 0) z.flashT--;
@@ -1362,15 +1368,19 @@ function castSpell(spell) {
       if (dist(e, p) < spell.radius + e.r) {
         damageEnemy(e, spell.dmg, 'ice');
        addFloatText(e.x, e.y-e.r-20, '冰冻', '#81d4fa');
-        e.freezeT += buffIce * spell.freezeMon;  // 时长可以叠加
+        e.freezeT += buffIce * spell.freezeMon;
         hitAny = true; addProf('ice');
       }
     }
     if (G.boss && dist(G.boss, p) < spell.radius + G.boss.r) {
-      damageBoss(spell.dmg, 'ice');
-      addFloatText(G.boss.x, G.boss.y-G.boss.r-20, '冰冻', '#81d4fa');
-      G.boss.freezeT += buffIce * spell.freezeBoss;
-      hitAny = true; addProf('ice');
+      if (getDamageMultiplier('ice', G.boss) !== 0) {
+        damageBoss(spell.dmg, 'ice');
+        addFloatText(G.boss.x, G.boss.y-G.boss.r-20, '冰冻', '#81d4fa');
+        G.boss.freezeT += buffIce * spell.freezeBoss;
+        hitAny = true; addProf('ice');
+      } else {
+        addFloatText(G.boss.x, G.boss.y - G.boss.r - 15, '免疫！', '#888');  // Boss免疫冰
+      }
     }
     G.shake = 6;
     if (!hitAny) {
@@ -1389,6 +1399,7 @@ function showFeedback(text, color) {
 // ======================== 波次系统 ========================
 function startNextWave() {
   G.wave++;
+  G.evacPoint = null;   // 新波次开始，上一波的撤离点必须消失（Boss 波分支 return 前也要清）
   if (G.wave % BOSS_INTERVAL === 0 && !G.boss) {
     const bossList = ['fairy', 'golem', 'evilSpirit'];
     const bossType = bossList[(G.wave/3 - 1) % 3];
@@ -1400,7 +1411,6 @@ function startNextWave() {
     G.shake = 12;
     return;  // boss出现，不生成其他敌人
   }
-  G.evacPoint = null;
   const len = WAVE_TABLE.length;
   const numBoss = Math.floor(G.wave / 3);
   const table = WAVE_TABLE[(G.wave - numBoss - 1) % len];  // 从0开始,每2波普通有1波boss；三轮/9波后循环
@@ -1671,7 +1681,7 @@ function updateEnemy() {
         const ang = e.facing;
         G.projectiles.push({
           x:e.x, y:e.y, vx:cos*3, vy:sin*3,
-          dmg:dmg, elem:'wood', r:6, life:180, ally:false, hitSet:new Set(),
+          dmg:dmg, elem:'wood', r:6, life:150, ally:false, hitSet:new Set(),
         });
       }
     }
@@ -1805,7 +1815,7 @@ function updateBoss() {
   const spdMult = phase.spdMult || 1;
   const spd = Math.max(0, B.spd * spdMult - ICE_SLOW * getBuffIce() * (b.slowStacks||0)
                           - (b.quakeSlowT > 0 ? QUAKE_SLOW : 0));
-  const rooted = b.rootT > 0 && b.phaseNO != len - 1;   // 束缚（狂暴阶段免疫）
+  const rooted = b.rootT > 0;
   if (rooted) { b.rootT--; b.vx = 0; b.vy = 0; }
   b.moveT--;
   if (b.moveT <= 0) {  // Movement 随机游走
@@ -1815,7 +1825,7 @@ function updateBoss() {
   }
   const dx = b.targetX - b.x, dy = b.targetY - b.y;
   const d = Math.hypot(dx, dy);
-  if (d > 0.01) {    // 向t移动 (dx/d) = cos(atan2(dy, dx)) && !rooted ？
+  if (d > 0.01 && !rooted) {    // 向目标移动；束缚期间不加速（否则清零后又被 lerp 拉回）
     b.vx = lerp(b.vx, (dx / d) * spd, 0.15);
     b.vy = lerp(b.vy, (dy / d) * spd, 0.15);
   }
@@ -1868,13 +1878,13 @@ function updateBoss() {
       for (const da of [-0.4, 0, 0.4]) {
         G.projectiles.push({
           x: b.x, y: b.y, vx: Math.cos(ang+da)*3, vy: Math.sin(ang+da)*3,
-          dmg: b.dmg, elem: shotElem, r: 8, life: 180, ally: false, hitSet: new Set(),
+          dmg: b.dmg, elem: shotElem, r: 6, life: 300, ally: false, hitSet: new Set(),
         });
       }
     } else {
       G.projectiles.push({
         x: b.x, y: b.y, vx: Math.cos(ang)*3, vy: Math.sin(ang)*3,
-        dmg: b.dmg, elem: shotElem, r: 8, life: 180, ally: false, hitSet: new Set(),
+        dmg: b.dmg, elem: shotElem, r: 8, life: 300, ally: false, hitSet: new Set(),
       });
     }
   }
@@ -2092,7 +2102,7 @@ function updateCrystals() {
   }
 }
 
-function updateHealPacks() {
+function updateHealPacks() {  //更新血包
   const p = G.player;
   for (let i = G.healPacks.length-1; i >= 0; i--) {
     const h = G.healPacks[i];
@@ -2302,7 +2312,7 @@ function loadAdventureLevel() {
   } catch(e) {}
 }
 
-const ENHANCE_KEY = 'element_expedition_enhance';
+const ENHANCE_KEY = NS + 'element_expedition_enhance';
 
 function saveEnhanceState() {
   try {
@@ -2329,7 +2339,8 @@ function spawnEnhanceDrop(spellId) {
   const d = rand(60, 120);
   const spell = ENHANCE_SPELLS.find(s => s.id === spellId) || Epic_SPELLS.find(s => s.id === spellId);
   G.enhanceDrops.push({
-    x: p.x + Math.cos(ang)*d, y: p.y + Math.sin(ang)*d,
+    x: Math.min(W - 60, Math.max(60, p.x + Math.cos(ang)*d)),
+    y: Math.min(H - 60, Math.max(60, p.y + Math.sin(ang)*d)),
     spellId, r: 16, pulse: 0, elem: spell.elem, epic: spell.gesture === 'ZIGZAG',
   });
 }
@@ -2353,6 +2364,9 @@ function updateEnhanceDrops() {
 }
 
 // ======================== 渲染 ========================
+// 关卡滤镜钩子：非空时按「隐藏层 → 滤镜 → 可见层」绘制；为空时走原渲染顺序，行为不变
+let renderVeil = null;
+
 function render() {
   const sx = G.shake > 0.5 ? (Math.random()-0.5)*G.shake : 0;
   const sy = G.shake > 0.5 ? (Math.random()-0.5)*G.shake : 0;
@@ -2361,9 +2375,31 @@ function render() {
   ctx.fillRect(0, 0, W, H);
   drawGrid(sx, sy);
 
+  if (!renderVeil) {
+    ctx.save();
+    ctx.translate(sx, sy);
+    drawScene();
+    ctx.restore();
+    updateHUD();
+    return;
+  }
+
   ctx.save();
   ctx.translate(sx, sy);
+  drawHiddenLayer();
+  ctx.restore();
 
+  renderVeil();
+
+  ctx.save();
+  ctx.translate(sx, sy);
+  drawVisibleLayer();
+  ctx.restore();
+  updateHUD();
+}
+
+// 原渲染顺序（无滤镜时走这里）
+function drawScene() {
   drawCrystals();
   drawHealPacks();
   drawEnhanceDrops();
@@ -2382,9 +2418,33 @@ function render() {
   drawGestureHint();
   drawJoystick();
   drawGesture();
+}
 
-  ctx.restore();
-  updateHUD();
+// 隐藏层：滤镜之下，被压暗
+function drawHiddenLayer() {
+  drawEnemies();
+  drawTreeSpirits();
+  drawBoss();
+  drawProjectiles(false);
+  drawPlayer();
+}
+
+// 可见层：滤镜之上，始终可见
+function drawVisibleLayer() {
+  drawCrystals();
+  drawHealPacks();
+  drawEnhanceDrops();
+  drawEvacPoint();
+  drawHealZones();
+  drawWalls();
+  drawEpicZones();
+  drawParticles();
+  drawProjectiles(true);
+  drawtraceEffects();
+  drawFloatTexts();
+  drawGestureHint();
+  drawJoystick();
+  drawGesture();
 }
 
 function drawGrid(sx, sy) {
@@ -2607,15 +2667,14 @@ function drawEvacPoint() {
   ctx.restore();
 }
 
-function drawProjectiles() {
+function drawProjectiles(ally) {   // ally=true 仅友方 / false 仅敌方 / 省略 全部
   for (const pr of G.projectiles) {
-    {
-      const color = pr.ally ? ELEMENTS[pr.elem].color : '#689f38';
-      ctx.fillStyle = color;
-      ctx.shadowColor = color; ctx.shadowBlur = 10;
-      ctx.beginPath(); ctx.arc(pr.x, pr.y, pr.r, 0, TAU); ctx.fill();
-      ctx.shadowBlur = 0;
-    }
+    if (ally !== undefined && !!pr.ally !== ally) continue;
+    const color = pr.ally ? ELEMENTS[pr.elem].color : '#689f38';
+    ctx.fillStyle = color;
+    ctx.shadowColor = color; ctx.shadowBlur = 10;
+    ctx.beginPath(); ctx.arc(pr.x, pr.y, pr.r, 0, TAU); ctx.fill();
+    ctx.shadowBlur = 0;
   }
 }
 
@@ -2648,10 +2707,10 @@ function drawEpicZones() {
     if (z.kind === 'quake') {          // 地崩山摧：整块震击填充 + 逐次新增的裂纹
       const age = z.maxLife - z.life;
       if (z.flashT > 0) {
-        const hw = z.side / 2;
+        const hw = z.size / 2;
         ctx.globalAlpha = a * 0.2 * (z.flashT / 30);
         ctx.fillStyle = '#fdd835';
-        ctx.fillRect(z.x - hw, z.y - hw, z.side, z.side);
+        ctx.fillRect(z.x - hw, z.y - hw, z.size, z.size);
       }
       for (const c of z.cracks || []) {
         const prog = clamp((age - c.born) / 22, 0, 1);   // 出现后22帧内从中心向外延伸
@@ -2907,7 +2966,7 @@ function drawtraceEffects() {
       ctx.strokeStyle = '#b3e5fc'; ctx.lineWidth = 1.5;
       ctx.beginPath(); ctx.arc(le.x, le.y, rr * 0.62, 0, TAU); ctx.stroke();
     } else if (le.type === 'meteor') {
-      // 火流星：从出现到坠地的整个过程1s
+      // 陨星：从出现到坠地的整个过程1s
       const prog = 1 - le.life / le.total;            // 0 → 1
       const mtp = 1 + prog * 0.5;
       const dropY = le.startY + (le.y - le.startY) * Math.pow(prog, 1.4);   // 加速下落
@@ -3433,6 +3492,14 @@ document.addEventListener('contextmenu', e => { if (IS_MOBILE) e.preventDefault(
 requestAnimationFrame(loop);
 try { getTemplates(); } catch(e) { console.error('Template init failed:', e); }
 
+</script>
+<script>
+/* RL 接入：仅在 ?rl=1 时加载数据桥，正常游玩零开销；所有派生版本自动继承 */
+if (new URLSearchParams(location.search).get('rl') === '1') {
+  const s = document.createElement('script');
+  s.src = 'AGENT/rl_bridge.js';
+  document.body.appendChild(s);
+}
 </script>
 </body>
 </html>
