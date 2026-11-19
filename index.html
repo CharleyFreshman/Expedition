@@ -697,7 +697,7 @@ function spawnCrystal() {
   });
 }
 
-function spawnHealPack() {
+function spawnHealPack() { // 创建血包
   const p = G.player;
   const ang = rand(0, TAU);
   const d = rand(80, 160);
@@ -962,7 +962,7 @@ function castEpicSpell(spell) {
       strike();
       break;
     }
-    case 'blizzard': { // 绝对零度：r=3；未冰冻→(4伤+冰冻)，已冰冻→ 4 x 剩余冰冻秒数（向上取整）
+    case 'blizzard': { // 绝对零度：r=3；未冰冻→(4伤+freeze)，已冰冻→ 4 x 剩余FreezeT（向上取整）
       const r = spell.radius;
       const buffIce = getBuffIce();
       G.traceEffects.push({type:'frost', x:p.x, y:p.y, r, total:60, life:60, color:col});
@@ -987,10 +987,8 @@ function castEpicSpell(spell) {
       G.shake = 10;
       break;
     }
-    case 'vortex': { // 漩涡：玩家位置与facing方向2.5单位为圆心、r=2.5；牵引+秒伤，持续10s
-      const cx = p.x + Math.cos(p.facing) * UNIT;
-      const cy = p.y + Math.sin(p.facing) * UNIT;
-      G.epicZones.push({kind:'vortex', x:cx, y:cy, r:spell.radius, dmg:spell.dmg,
+    case 'vortex': { // 漩涡：r=2.5；牵引+秒伤，持续10s
+      G.epicZones.push({kind:'vortex', x:p.x, y:p.y, r:spell.radius, dmg:spell.dmg,
         life:spell.dur, tickT:60});
       G.shake = 6;
       break;
@@ -1074,16 +1072,23 @@ function updateEpicZones() {
         G.shake = round(4 + z.dmg);
       }
       if (z.flashT > 0) z.flashT--;
-    } else if (z.kind === 'vortex') {   //漩涡（圆形牵引+秒伤） 
-      const pull = t => {              // vy:圆心方向 2 / vx:切线方向 1，按敌人阻尼插值0.1折算
+    } else if (z.kind === 'vortex') {   //漩涡（圆形牵引+秒伤）吸力随 buff 升降
+      let multi = getBuffWater();
+      const pull = t => {
         const dx = z.x - t.x, dy = z.y - t.y, d = Math.hypot(dx, dy) || 1;
-        const rx = dx / d, ry = dy / d;
-        t.vx += (rx * 1 + (-ry) * 1) * 0.1;
-        t.vy += (ry * 2 + rx * 2) * 0.1;
+        const rx = dx / d, ry = dy / d;  // 向心 (rx, ry)；切向 (-ry, rx)
+        if ('vx' in t){
+          t.vx += (rx * 1.5 * multi - ry) * 0.1;   // (左,右)分别是在x/y轴上的分量；按敌人阻尼插值0.1折算
+          t.vy += (ry * 1.5 * multi + rx) * 0.1;
+        } else {
+          t.x += (rx * 1.5 * multi - ry) * 0.3; 
+          t.y += (ry * 1.5 * multi + rx) * 0.3;
+        }
       };
       for (const e of G.enemies) { if (dist(e, z) < z.r + e.r) pull(e); }
+      for (const c of G.crystals) { if (dist(c, z) < z.r + c.r) pull(c); }
       if (G.boss && dist(G.boss, z) < z.r + G.boss.r) pull(G.boss);
-      if (--z.tickT <= 0) {            // 秒伤 1
+      if (--z.tickT <= 0) {
         z.tickT = 60;
         for (const e of G.enemies) { if (dist(e, z) < z.r + e.r) damageEnemy(e, z.dmg, 'water'); }
         if (G.boss && dist(G.boss, z) < z.r + G.boss.r) damageBoss(z.dmg, 'water');
@@ -1205,7 +1210,7 @@ function castSpell(spell) {
       hitSet:new Set(), ang: ang
     });
   } else if (spell.type === 'line') {
-    // 水柱：2单位长度线段，一次性伤害，1s视觉效果
+    // 水线：2单位长度线段，一次性伤害，1s视觉效果
     let hitAny = false;
     const target = findNearestEnemy(p.x, p.y, spell.len);
     let ang = angle(target, p);
@@ -1316,7 +1321,7 @@ function castSpell(spell) {
     // 木：召唤木灵，血量20，嘲讽
     const Hp = spell.spiritHp * getBuffWood();
     G.treeSpirits.push({
-      r:14, x: p.x + Math.cos(p.facing), y: p.y + Math.sin(p.facing), vx:0, vy:0,
+      r:14, x: p.x, y: p.y, vx:0, vy:0,
       hp:Hp, maxHp:20, dmg:spell.dmg, atkCD:spell.atkCD, atkRange:spell.atkRange, atkEff:0,
     });
     addParticles(p.x, p.y, '#66bb6a', 25, 4, 40);
@@ -1689,7 +1694,7 @@ function updateEnemy() {
     e.x = clamp(e.x, e.r, W-e.r);  // 限制敌人在屏幕内
     e.y = clamp(e.y, e.r, H-e.r);
 
-    for (const w of G.walls) {    // 撞击城墙: enemies can't pass through
+    for (const w of G.walls) {    // 碰撞击城墙: enemies can't pass through
       const hw = w.size/2;
       if (e.x > w.x-hw-e.r && e.x < w.x+hw+e.r && e.y > w.y-hw-e.r && e.y < w.y+hw+e.r) {
         w.hp -= dmg;
@@ -1704,6 +1709,7 @@ function updateEnemy() {
           e.y = dy > 0 ? w.y+hw+e.r : w.y-hw-e.r;
           e.vy = -e.vy + Math.sin(ang)*10*spd;
         }
+        break;   // 同位置叠放的墙只吃一次
       }
     }
     if (target != p){      // 碰撞击木灵 Collision with tree spirits 
@@ -1722,12 +1728,12 @@ function updateEnemy() {
           p.shield -= absorbed; dmg -= absorbed;
         }
         p.hp -= dmg;
-        p.hitFlash = 30;  // 增大受击间隔
+        p.hitFlash = 30;  // 受击间隔
         G.shake= round(dmg);
         addFloatText(p.x, p.y-p.r-10, '-' + round(dmg), '#f44336');
         const ang = Math.atan2(p.y-e.y, p.x-e.x);
-        p.vx += Math.cos(ang)*3; p.vy += Math.sin(ang)*3;
-        e.vx -= Math.cos(ang)*3*spd; e.vy -= Math.sin(ang)*3*spd;
+        p.vx += Math.cos(ang); p.vy += Math.sin(ang);
+        e.vx -= Math.cos(ang)*6*spd; e.vy -= Math.sin(ang)*6*spd;
       }
     }
     if (e.hp <= 0) {
@@ -1770,7 +1776,6 @@ function updateBoss() {
   if (b.freezeT > 0) { 
     b.freezeT--; 
     b.atkCD = B.atkCD;
-    b.summonT = phase.summonCD;
     return; 
   }
   // Phase transition 阶段切换
@@ -1798,7 +1803,7 @@ function updateBoss() {
   if (b.phaseNO === len - 1) {
     b.enrageWeakT--;
     if (b.enrageWeakT <= 0) {
-      const pool = b.enragePool;  // 进狂暴时已缓存
+      const pool = b.enragePool;  // 进狂暴时缓存
       b.enrageWeakT = 600;
       b.enrageIdx = ((b.enrageIdx || 0) + 1) % pool.length;
       b.weak = pool[b.enrageIdx];
@@ -1811,7 +1816,7 @@ function updateBoss() {
     if (b.slowT > 0) b.slowT--;
      else { b.slowStacks--; b.slowT = ICE_DECAY; } 
   }
-  if (b.quakeSlowT > 0) b.quakeSlowT--;   // 地崩山摧独立减速
+  if (b.quakeSlowT > 0) b.quakeSlowT--;
   const spdMult = phase.spdMult || 1;
   const spd = Math.max(0, B.spd * spdMult - ICE_SLOW * getBuffIce() * (b.slowStacks||0)
                           - (b.quakeSlowT > 0 ? QUAKE_SLOW : 0));
@@ -1825,7 +1830,7 @@ function updateBoss() {
   }
   const dx = b.targetX - b.x, dy = b.targetY - b.y;
   const d = Math.hypot(dx, dy);
-  if (d > 0.01 && !rooted) {    // 向目标移动；束缚期间不加速（否则清零后又被 lerp 拉回）
+  if (d > 0.01 && !rooted) { 
     b.vx = lerp(b.vx, (dx / d) * spd, 0.15);
     b.vy = lerp(b.vy, (dy / d) * spd, 0.15);
   }
@@ -1862,14 +1867,15 @@ function updateBoss() {
     const ang = b.facing;
     const shotElem = Array.isArray(b.elemMode) ? pick(b.elemMode) : b.elemMode;
     if (b.type === 'evilSpirit') {
-      // 腐化树灵：固定位置扩散波纹
+      // 腐化树灵：固定位置扩散波纹；冲击波不打木灵——本是同根生
       G.traceEffects.push({type:'ripple', x:b.x, y:b.y, r:range, total:45, life:45,
         color:'#8bc34a', elem:'wood'});
-      if (dist(b, p)-b.r < range + p.r && p.hitFlash <= 0) {  // 冲击波打不到木灵？
+      if (dist(b, p)-b.r < range + p.r && p.hitFlash <= 0) { 
         if (p.shield > 0) { const a = Math.min(p.shield, dmg); p.shield -= a; }
         else { p.hp -= dmg; p.hitFlash = 30; G.shake = round(dmg);
           const ka = angle(b, p); 
-          p.vx -= Math.cos(ka)*5; p.vy -= Math.sin(ka)*5;
+          p.vx -= Math.cos(ka)*2; 
+          p.vy -= Math.sin(ka)*2;
           addFloatText(p.x, p.y-p.r-10, '-'+round(dmg), '#f44336');
         }
       }
@@ -1894,36 +1900,38 @@ function updateBoss() {
         w.hp -= dmg;
         damageBoss(1, 'earth');
         addParticles(b.x, b.y, '#fdd835', 6, 4, 15);
-        const dx = b.x - w.x, dy = b.y - w.y;  // 指向被减向量e
+        const dx = b.x - w.x, dy = b.y - w.y;  // 指向被减向量 b
         const ang = Math.atan2(dy, dx);
         if (Math.abs(dx) > Math.abs(dy)) {  // 弹反
           b.x = dx > 0 ? w.x+hw+b.r : w.x-hw-b.r;
-          b.vx = -b.vx + Math.cos(ang)*5*b.spd;
+          b.vx = -b.vx + Math.cos(ang)*5*spd;
         } else {
           b.y = dy > 0 ? w.y+hw+b.r : w.y-hw-b.r;
-          b.vy = -b.vy + Math.sin(ang)*5*b.spd;
+          b.vy = -b.vy + Math.sin(ang)*5*spd;
         }
+        break;
       }
     }
   // Contact damage to player 碰撞
   if (dist(b, p) < b.r + p.r && p.hitFlash <= 0) {
-    if (p.shield > 0) { 
-      const a = Math.min(p.shield, dmg); 
-      p.shield -= a; dmg -= a; 
+    let pd = dmg;
+    if (p.shield > 0) {
+      const a = Math.min(p.shield, pd);
+      p.shield -= a; pd -= a;
     }
-    p.hp -= dmg; p.hitFlash = 30; G.shake= round(dmg);
-    addFloatText(p.x, p.y-p.r-10, '-' + round(dmg), '#f44336');
-    const ang = angle(b, p);            // 玩家→Boss方向
-    p.vx -= Math.cos(ang)*3;            // 反向击退
-    p.vy -= Math.sin(ang)*3;
+    p.hp -= pd; p.hitFlash = 30; G.shake= round(pd);
+    addFloatText(p.x, p.y-p.r-10, '-' + round(pd), '#f44336');
+    const ang = angle(b, p);            // 指向 boss
+    p.vx -= Math.cos(ang)*4*spd;        // 反向击退
+    p.vy -= Math.sin(ang)*4*spd;
   }
-  // Boss collision 碰撞击木灵 ( doesn't target, but damages on contact )
+  // Boss collision 碰撞击木灵 ( 不是boss主要目标 )
   for (const s of G.treeSpirits) {
     if (dist(b, s) < b.r) {
       s.hp -= dmg;
-      const ang = angle(s, b);
-      b.vx -= Math.cos(ang)*4*b.spd; 
-      b.vy -= Math.sin(ang)*4*b.spd;
+      const ang = angle(s, b);          // 指向 treespirit
+      b.vx -= Math.cos(ang)*3*spd; 
+      b.vy -= Math.sin(ang)*3*spd;
     }
   }
 }
@@ -2045,8 +2053,8 @@ function updateProjectiles() {
         addParticles(pr.x, pr.y, '#8d6e63', 6, 3, 20);
         pr.life = 0;
       }
-      // 击中木灵
-      for (const s of G.treeSpirits) {
+      // 击中木灵（墙已挡下的死弹不再扣血）
+      if (pr.life > 0) for (const s of G.treeSpirits) {
         if (dist(pr, s) < pr.r + s.r) {
           s.hp -= pr.dmg;
           addParticles(s.x, s.y, '#66bb6a', 4, 3, 20);
@@ -2102,7 +2110,7 @@ function updateCrystals() {
   }
 }
 
-function updateHealPacks() {  //更新血包
+function updateHealPacks() {  //更新血包治疗
   const p = G.player;
   for (let i = G.healPacks.length-1; i >= 0; i--) {
     const h = G.healPacks[i];
@@ -2735,22 +2743,28 @@ function drawEpicZones() {
         ctx.stroke();
       }
       ctx.globalAlpha = 1;
-    } else if (z.kind === 'vortex') {  // 漩涡：旋转涡纹
+    } else if (z.kind === 'vortex') {  // 漩涡
+      let multi = getBuffWater();
       ctx.globalAlpha = a * 0.85;
-      ctx.strokeStyle = '#38a4fc'; ctx.lineWidth = 3;
+      ctx.strokeStyle = '#38a4fc'; ctx.lineWidth = 2.5;
       ctx.beginPath(); ctx.arc(z.x, z.y, z.r, 0, TAU); ctx.stroke();
+      ctx.fillStyle = 'rgba(56,164,252,.10)';
+      ctx.beginPath(); ctx.arc(z.x, z.y, z.r, 0, TAU); ctx.fill();
       ctx.save();
       ctx.translate(z.x, z.y);
-      ctx.rotate(G.time * 0.09);
-      ctx.strokeStyle = '#65b8fc'; ctx.lineWidth = 2;
+      ctx.rotate(-G.time * 0.09 * multi);
+      ctx.strokeStyle = '#65b8fc'; ctx.lineWidth = 1.6;
       for (let k = 0; k < 3; k++) {
         ctx.beginPath();
-        ctx.arc(0, 0, z.r * (0.35 + k * 0.22), k * TAU / 3, k * TAU / 3 + Math.PI * 1.2);
+        for (let i = 0; i <= 48; i++) {
+          const t = i / 48, r = z.r * (0.1 + 0.85 * t);
+          const ang = k * TAU / 4 - t * TAU * 2;  // k是线数，4是密度，＋顺/-逆
+          const x = Math.cos(ang) * r, y = Math.sin(ang) * r;
+          if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+        }
         ctx.stroke();
       }
       ctx.restore();
-      ctx.fillStyle = 'rgba(56,164,252,.10)';
-      ctx.beginPath(); ctx.arc(z.x, z.y, z.r, 0, TAU); ctx.fill();
     }
     ctx.globalAlpha = 1;
   }
