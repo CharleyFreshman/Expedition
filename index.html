@@ -373,8 +373,8 @@ const ENEMY_TYPES = {
   wolf:    { name:'土野狼',   elem:'earth',   hp:3, spd:1.5, dmg:3, r:15, drop:'earth',   ai:'charge' },
   bat:     { name:'酷雷蝠',   elem:'thunder', hp:3, spd:2.0, dmg:2, r:12, drop:'thunder', ai:'swarm'  },
   spirit:  { name:'树精',     elem:'wood',    hp:6, spd:.75,  dmg:4, r:20, drop:'wood',    ai:'ranged', atkCD:120, atkRange:3*UNIT, elite:true },
-  firebug: { name:'熔岩虫',   elem:'fire',    hp:3, spd:1.0, dmg:4, r:13, drop:'fire',    ai:'swarm'  },
-  iceshard:{ name:'雪怪',    elem:'ice',     hp:4, spd:1.25, dmg:3, r:16, drop:'ice',     ai:'charge'  },
+  firebug: { name:'熔岩虫',   elem:'fire',    hp:3, spd:1.25, dmg:3, r:13, drop:'fire',    ai:'swarm'  },
+  iceshard:{ name:'雪怪',    elem:'ice',     hp:4, spd:1.0, dmg:3, r:16, drop:'ice',     ai:'charge'  },
 };
 
 const COUNTERS = {
@@ -407,7 +407,7 @@ const BOSS_TYPES = {
     phases: [
       { hpPct: 1.0,  weak: 'ice',  elemMode: 'water',   resist: 'fire',  phaseName: '水', immune: '',  summon: 'slime',   summonCD: 360, spdMult: 1.0 },
       { hpPct: 0.65,  weak: 'thunder',  elemMode: 'ice',   resist: 'water', phaseName: '冰', immune: '', summon: 'iceshard', summonCD: 300, spdMult: 1.2 },
-      { hpPct: 0.30, weak: '',        resist: '',      phaseName: '狂暴',   elemMode: ['water', 'ice'],    immune: ['fire', 'water'], summon: 'spirit',   summonCD: 240, spdMult: 1.5, atkRange:3*UNIT, },
+      { hpPct: 0.30, weak: '',   resist: '',  phaseName: '狂暴',   elemMode: ['water', 'ice'],    immune: ['fire', 'water'], summon: 'spirit',   summonCD: 240, spdMult: 1.5, scatter: false },
     ],
   },
   evilSpirit:{
@@ -415,7 +415,7 @@ const BOSS_TYPES = {
     phases: [
       { hpPct: 1.0,  weak: 'fire',  elemMode: 'wood',  resist: 'earth', phaseName: '木',  immune: '', summon: 'spirit', summonCD: 360, spdMult: 1.0 },
       { hpPct: 0.70, weak: 'water',  elemMode: 'fire',   resist: 'wood',  phaseName: '火', immune: '',  summon: 'firebug',    summonCD: 300, spdMult: 1.2 },
-      { hpPct: 0.40, weak: '',        resist: '',      phaseName: '狂暴',   elemMode: ['wood', 'fire'],    immune: ['earth', 'wood'], summon: 'wolf',   summonCD: 240, spdMult: 1.5 },
+      { hpPct: 0.40, weak: '',   resist: '',  phaseName: '狂暴',   elemMode: ['wood', 'fire'],    immune: ['earth', 'wood'], summon: 'wolf',   summonCD: 240, spdMult: 1.5 , scatter: false },
     ],
   }
 };
@@ -916,11 +916,11 @@ function castEpicSpell(spell) {
       }});
       break;
     }
-    case 'flower': { // 小花仙：正前方召唤，上限1（重复施放增加Hp）
+    case 'flower': { // 花仙：正前方召唤，上限1（重复施放增加Hp）
       const Hp = spell.hp * getBuffWood();
       const s = G.treeSpirits.find(t => t.kind === 'fairy');
       if (s) {
-        s.hp += 20;
+        s.hp += 40;
         addParticles(s.x, s.y, '#f48fb1', 12, 4, 30);
         addFloatText(s.x, s.y - s.r - 15, '成长', '#66bb6a');
       } else {
@@ -1667,10 +1667,10 @@ function updateEnemy() {
       }
     } else if (t.ai === 'swarm') {  // 蜂群波浪
       e.swarmAngle += 0.05;
-      const ang = e.facing + Math.sin(e.swarmAngle) * 0.6;
-      e.vx = lerp(e.vx, cos*spd, 0.15);
-      e.vy = lerp(e.vy, sin*spd, 0.15);
-    } else if (t.ai === 'ranged') {  // 远处观望
+      const ang = e.facing + Math.sin(e.swarmAngle) * 0.5;
+      e.vx = lerp(e.vx, Math.cos(ang)*spd, 0.15);
+      e.vy = lerp(e.vy, Math.sin(ang)*spd, 0.15);
+    } else if (t.ai === 'ranged') {  // 远处相持
       if (d > t.atkRange) {
         e.vx = lerp(e.vx, cos*spd, 0.1);
         e.vy = lerp(e.vy, sin*spd, 0.1);
@@ -1884,7 +1884,7 @@ function updateBoss() {
       for (const da of [-0.4, 0, 0.4]) {
         G.projectiles.push({
           x: b.x, y: b.y, vx: Math.cos(ang+da)*3, vy: Math.sin(ang+da)*3,
-          dmg: b.dmg, elem: shotElem, r: 6, life: 300, ally: false, hitSet: new Set(),
+          dmg: b.dmg, elem: shotElem, r: 5, life: 300, ally: false, hitSet: new Set(),
         });
       }
     } else {
@@ -2167,7 +2167,7 @@ function updateHealZones() {
   }
 }
 
-function updateTreeSpirits() {  // 更新木灵（2星木灵 / 4星小花仙）
+function updateTreeSpirits() {  // 更新木灵（2星木灵 / 4星花仙）
   const B = G.buffs['wood'];
   if (B?.healTick > 0) {  // 防止Buff未创建
       B.healTick--;
@@ -2179,7 +2179,7 @@ function updateTreeSpirits() {  // 更新木灵（2星木灵 / 4星小花仙）
     if (s.atkEff > 0) s.atkEff--;
     s.atkCD--;
 
-    if (s.kind === 'fairy') {  // 小花仙：跟随玩家、单体攻击、嘲讽
+    if (s.kind === 'fairy') {  // 花仙：跟随玩家、单体攻击、嘲讽
       const p = G.player;
       if (dist(s, p) > 1*UNIT) {           // 超出1单位才跟随
         const ang = angle(p, s);
@@ -2785,7 +2785,7 @@ function drawHealZones() {
 
 function drawTreeSpirits() {
   for (const s of G.treeSpirits) {
-    if (s.kind === 'fairy') {   // 小花仙：粉色身体 + 4 翅膀 + 黑眼睛
+    if (s.kind === 'fairy') {   // 花仙：粉色身体 + 4 翅膀 + 黑眼睛
       if (s.atkEff > 0) {       // 出手时的花瓣冲击环
         const prog = 1 - s.atkEff / 30;
         const rr = s.r * (1.05 + prog * 1.15);
