@@ -333,10 +333,10 @@ const THUNDER_TINTS = { line:'#2ec4dd', chain:'#1d4ed8', epic:'#b84bf7' };
 const SPELLS = [
   // === LINE (1星) 单体法术 ===
   { id:'fire_line',    name:'火球术',     elem:'fire',    gesture:'LINE', cost:1, type:'projectile',  dmg:2, range:3*UNIT, r:10, splash:true },
-  { id:'wood_line',    name:'藤蔓缠绕',   elem:'wood',    gesture:'LINE', cost:1, type:'instant',  dmg:1, range:3*UNIT, bindMon:4*60, bindBoss:2*60 },
+  { id:'wood_line',    name:'藤蔓缠绕',   elem:'wood',    gesture:'LINE', cost:1, type:'instant',  dmg:2, range:3*UNIT, bindMon:2*60, bindBoss:1*60 },
   { id:'earth_line',   name:'碎石弹',   elem:'earth',   gesture:'LINE', cost:1, type:'projectile',  dmg:2, range:3*UNIT, r:8, split:true },
-  { id:'thunder_line', name:'晴天霹雳',     elem:'thunder', gesture:'LINE', cost:1, type:'zigzag',  dmg:2, len:3*UNIT },
-  { id:'ice_line',     name:'冰锥术',     elem:'ice',     gesture:'LINE', cost:1, type:'projectile', dmg:2, range:3*UNIT, r:8, freezeMon:60, freezeBoss:60, slow:false },
+  { id:'thunder_line', name:'晴天霹雳',     elem:'thunder', gesture:'LINE', cost:1, type:'flash',  dmg:2, len:3*UNIT },
+  { id:'ice_line',     name:'冰锥术',     elem:'ice',     gesture:'LINE', cost:1, type:'projectile', dmg:2, range:3*UNIT, r:6, freezeMon:60, freezeBoss:60, slow:false },
   { id:'water_line',   name:'龙王一喷',     elem:'water',   gesture:'LINE', cost:1, type:'line',   dmg:2, len:2*UNIT },
   // === CIRCLE (2星) 范围法术 ===
   { id:'fire_circle',  name:'朱雀扇',   elem:'fire',    gesture:'CIRCLE', cost:2, type:'fan',    dmg:4, radius:3*UNIT, radian:Math.PI*2/3 },
@@ -364,9 +364,9 @@ ENHANCE_SPELLS.forEach(s => { ENHANCE_MAP[s.elem + '|' + s.gesture] = s; });
 // === 4星(ZIGZAG) 史诗法术 === 消耗4材料, 冷却6s, 需解锁
 const Epic_SPELLS = [
   { id:'fire_zig',    name:'陨星',         elem:'fire',    gesture:'ZIGZAG', cost:4, cd:360, type:'meteor',   dmg:8, radius:2*UNIT, castTime:60 },
-  { id:'wood_zig',    name:'花仙下凡',        elem:'wood',    gesture:'ZIGZAG', cost:4, cd:360, type:'fairy',   hp:40, dmg:2, rootDmg:1, atkCD:60, atkRange:2*UNIT, spd:2.5 },
+  { id:'wood_zig',    name:'花仙下凡',        elem:'wood',    gesture:'ZIGZAG', cost:4, cd:360, type:'fairy',   hp:40, dmg:2, rootDmg:2, atkCD:60, atkRange:2*UNIT, spd:2.5 },
   { id:'earth_zig',   name:'地崩山摧',        elem:'earth',   gesture:'ZIGZAG', cost:4, cd:360, type:'quake',    dmg:4, times:4, size:4*UNIT, atkCD:120 },
-  { id:'thunder_zig', name:'雷の呼吸·柒之型', elem:'thunder',  gesture:'ZIGZAG', cost:4, cd:360, type:'thunder7', dmg:6, atkRange:3*UNIT, maxJumps:8, atkCD:30 },
+  { id:'thunder_zig', name:'雷の呼吸·柒之型', elem:'thunder',  gesture:'ZIGZAG', cost:4, cd:360, type:'zigzag', dmg:6, atkRange:3*UNIT, maxJumps:8, atkCD:30 },
   { id:'ice_zig',     name:'绝对零度',        elem:'ice',     gesture:'ZIGZAG', cost:4, cd:360, type:'blizzard', dmg:4, radius:2.5*UNIT, freezeMon:4*60, freezeBoss:4*60 },
   { id:'water_zig',   name:'漩涡',           elem:'water',   gesture:'ZIGZAG', cost:4, cd:360, type:'vortex',   dmg:1, dur:600, radius:2.5*UNIT },
 ];
@@ -398,13 +398,13 @@ const WAVE_TABLE = [
 
 const BOSS_INTERVAL = 3;
 const ENRAGE_COLOR = '#f500c8'; // boss狂暴配色
-const BOSS_TYPES = { // 木冰同时免疫+散射=无敌
+const BOSS_TYPES = { // 木冰同时免疫+散射=无敌; 狂暴免疫属性不能克制召唤物
   fairy: {
     name: '堕落妖精', hp: 60, spd: 1.2, dmg: 6, r: 25, atkCD: 60, atkRange:6*UNIT,
     phases: [
       { hpPct: 1.0,  weak: 'earth',  elemMode: 'thunder', resist: 'ice',   phaseName: '雷',    immune: '',   summon: 'bat', summonCD: 360, spdMult: 1.0 },
-      { hpPct: 0.60, weak: 'wood',   elemMode: 'earth', resist: 'thunder',  phaseName: '土',    immune: '',   summon: 'wolf',     summonCD: 300, spdMult: 1.2 }, 
-      { hpPct: 0.20, weak: '',  resist: '',   phaseName: '狂暴',     elemMode: ['thunder', 'earth'],    immune: ['ice', 'thunder'],   summon: 'iceshard',  summonCD: 240, spdMult: 1.5, scatter: true },
+      { hpPct: 0.60, weak: 'wood',   elemMode: 'earth', resist: 'thunder',  phaseName: '土',    immune: '',   summon: 'tree',     summonCD: 300, spdMult: 1.2 }, 
+      { hpPct: 0.20, weak: '',  resist: '',   phaseName: '狂暴',     elemMode: ['thunder', 'earth'],    immune: ['ice', 'thunder'],   summon: 'wolf',  summonCD: 240, spdMult: 1.5, scatter: true },
     ],
   },
   golem: {
@@ -412,15 +412,15 @@ const BOSS_TYPES = { // 木冰同时免疫+散射=无敌
     phases: [
       { hpPct: 1.0,  weak: 'ice',  elemMode: 'water',   resist: 'fire',  phaseName: '水', immune: '',  summon: 'slime',   summonCD: 360, spdMult: 1.0 },
       { hpPct: 0.65,  weak: 'thunder',  elemMode: 'ice',   resist: 'water', phaseName: '冰', immune: '', summon: 'iceshard', summonCD: 300, spdMult: 1.2 },
-      { hpPct: 0.30, weak: '',   resist: '',  phaseName: '狂暴',   elemMode: ['water', 'ice'],    immune: ['fire', 'water'], summon: 'tree',   summonCD: 240, spdMult: 1.5, scatter: false },
+      { hpPct: 0.30, weak: '',   resist: '',  phaseName: '狂暴',   elemMode: ['water', 'ice'],    immune: ['fire', 'water'], summon: 'bat',   summonCD: 240, spdMult: 1.5, scatter: false },
     ],
   },
   evilSpirit:{
     name: '腐化树灵', hp: 60, spd: 1, dmg: 10, r: 30, atkCD: 100, atkRange:1*UNIT,
     phases: [
-      { hpPct: 1.0,  weak: 'fire',  elemMode: 'wood',  resist: 'earth', phaseName: '木',  immune: '', summon: 'tree', summonCD: 360, spdMult: 1.0 },
+      { hpPct: 1.0,  weak: 'fire',  elemMode: 'wood',  resist: 'earth', phaseName: '木',  immune: '', summon: 'wolf', summonCD: 360, spdMult: 1.0 },
       { hpPct: 0.70, weak: 'water',  elemMode: 'fire',   resist: 'wood',  phaseName: '火', immune: '',  summon: 'firebug',    summonCD: 300, spdMult: 1.2 },
-      { hpPct: 0.40, weak: '',   resist: '',  phaseName: '狂暴',   elemMode: ['wood', 'fire'],    immune: ['earth', 'wood'], summon: 'wolf',   summonCD: 240, spdMult: 1.5 , scatter: false },
+      { hpPct: 0.40, weak: '',   resist: '',  phaseName: '狂暴',   elemMode: ['wood', 'fire'],    immune: ['earth', 'wood'], summon: 'tree',   summonCD: 240, spdMult: 1.5 , scatter: false },
     ],
   }
 };
@@ -545,6 +545,24 @@ function recognizeGesture(rawPts) {  // 手势识别：$1 模板（Z/圆）+ 几
     }
   }
 
+  // 0b. 主轴共线：连续快划会带着“回笔”（plen≈2×se）甚至回程有偏移
+  //     用 PCA 主轴衡量细长程度：点集到最佳拟合直线的散布很小 → 就是划
+  if (pts.length >= 6) {
+    let sx = 0, sy = 0;
+    for (const q of pts) { sx += q.x; sy += q.y; }
+    sx /= pts.length; sy /= pts.length;
+    let cxx = 0, cxy = 0, cyy = 0;
+    for (const q of pts) {
+      const ax = q.x - sx, ay = q.y - sy;
+      cxx += ax*ax; cxy += ax*ay; cyy += ay*ay;
+    }
+    const tr = cxx + cyy, det2 = cxx*cyy - cxy*cxy;
+    const root = Math.sqrt(Math.max(0, tr*tr/4 - det2));
+    const major = Math.sqrt((tr/2 + root) / pts.length);
+    const minor = Math.sqrt(Math.max(0, tr/2 - root) / pts.length);
+    if (major > 25 && minor < Math.max(10, major * 0.18)) return {type:'LINE', score: 0.9};
+  }
+
   const tpls = getTemplates();
   const norm = normalizePath(pts);   // 只归一化一次，模板匹配复用
   const match = tpl => 1 - distanceAtBestAngle(norm, tpl, -ANG_RANGE, ANG_RANGE, ANG_PREC) / HALF_DIAG;
@@ -612,7 +630,14 @@ function recognizeGesture(rawPts) {  // 手势识别：$1 模板（Z/圆）+ 几
       const v2x = ep.x - bp.x, v2y = ep.y - bp.y;
       const dot = v1x*v2x + v1y*v2y;
       const m1 = Math.hypot(v1x, v1y), m2 = Math.hypot(v2x, v2y);
+      // 折点必须“尖”：平滑弧/长钩在折点附近 6 个点内转角很小，不能当 V
+      const i0 = Math.max(0, bendIdx - 3), i1 = Math.min(pts.length - 1, bendIdx + 3);
+      const ax = bp.x - pts[i0].x, ay = bp.y - pts[i0].y;
+      const bx2 = pts[i1].x - bp.x, by2 = pts[i1].y - bp.y;
+      const la = Math.hypot(ax, ay) || 1, lb2 = Math.hypot(bx2, by2) || 1;
+      const sharp = Math.acos(clamp((ax*bx2 + ay*by2) / (la*lb2), -1, 1)) * 180 / Math.PI;
       // 两臂都得够长：长直线落笔/起笔常带小钩，钩子会让夹角变小而误判成 V
+      if (sharp < 35) return {type:'LINE', score: 0.75};   // 平滑弯 → 仍是划
       if (m1 > startEnd * 0.25 && m2 > startEnd * 0.25) {
         const ang = Math.acos(clamp(dot / (m1 * m2), -1, 1));
         if (ang * 180 / Math.PI <= 120) return {type:'CHEVRON', score: 0.85};
@@ -916,7 +941,7 @@ function castEpicSpell(spell) {
   const p = G.player;
   // 选中类4星（火/雷）无有效目标时施法失败：由 tryCastSpell 返还材料与冷却并提示
   if (spell.type === 'meteor' && !G.boss && !findNearestEnemy(p.x, p.y, Infinity)) return false;
-  if (spell.type === 'thunder7' && !farthestEnemyWithin(p, spell.atkRange, null)) return false;
+  if (spell.type === 'zigzag' && !farthestEnemyWithin(p, spell.atkRange, null)) return false;
   const elem = spell.elem;
   const col = ELEMENTS[elem].color;
   G.castFx = { elem, timer: 45 };
@@ -966,7 +991,7 @@ function castEpicSpell(spell) {
       G.shake = 10;
       break;
     }
-    case 'thunder7': { // 雷闪/柒之型：每跳锁定范围3内最远敌人，跳数上限，间隔0.5s，不可连续命中同一目标
+    case 'zigzag': { // 雷闪/柒之型：每跳锁定范围3内最远敌人，跳数上限，间隔0.5s，不可连续命中同一目标
       let from = {x:p.x, y:p.y};
       let jumps = 0, last = null;
       const maxJumps = Math.round(spell.maxJumps * getBuffThunder());
@@ -1050,7 +1075,7 @@ function updatePendingCasts() {
 function spawnQuakeCracks(z) {
   const hw = z.size / 2;
   const born = z.maxLife - z.life;
-  const w = 5;    // 固定宽度
+  const w = 5;    // 裂痕宽度
   for (let k = 0; k < 4; k++) {
     const segs = [];
     let a = rand(0, 2*TAU), cx = 0, cy = 0;
@@ -1252,7 +1277,7 @@ function castSpell(spell) {
       damageBoss(spell.dmg, 'water'); hitAny = true;
     }
     if (hitAny) addProf(spell.elem);
-  } else if (spell.type === 'zigzag') {
+  } else if (spell.type === 'flash') {
     // 雷线：闪电⚡，3段2折，长3单位
     const totalLen = spell.len;
     const maxOffset = 0.3 * UNIT; // 全宽0.6单位
@@ -1269,7 +1294,7 @@ function castSpell(spell) {
       segs.push({x1:prevX, y1:prevY, x2:nx, y2:ny});
       prevX = nx; prevY = ny;
     }
-    G.traceEffects.push({type:'zigzag', segs, elem:'thunder', life:30, 
+    G.traceEffects.push({type:'flash', segs, elem:'thunder', life:30, 
       color:THUNDER_TINTS.line, width:10});
     let hitAny = false;
     const hitSet = new Set();
@@ -1571,6 +1596,15 @@ function finishGesture() {  // 手势精度
   G.isDrawing = false;
   if (G.gesturePts.length > 4) {
     const result = recognizeGesture(G.gesturePts);
+    // TEMP 诊断：划完看控制台，判断到底走哪条规则
+    {
+      const rp = G.gesturePts, bb = boundingBox(rp);
+      console.log('[G]', result.type, result.score.toFixed(2),
+        'n=' + rp.length,
+        'plen=' + Math.round(pathLength(rp)),
+        'se=' + Math.round(dist(rp[0], rp[rp.length - 1])),
+        'bb=' + Math.round(bb.w) + 'x' + Math.round(bb.h));
+    }
     if (result.type !== 'NONE' && result.score > 0.4) {
       tryCastSpell(result.type);
     } else if (G.gesturePts.length > 10) {
@@ -1639,6 +1673,7 @@ function updatePlayer() {
 function updateEnemy() {
   const p = G.player;
   const buffIce = getBuffIce(); // 帧内恒定
+  const slowRate = QUAKE_SLOW * getBuffEarth();
   for (let i = G.enemies.length-1; i >= 0; i--) {
     const e = G.enemies[i];
     const t = ENEMY_TYPES[e.type];
@@ -1652,16 +1687,16 @@ function updateEnemy() {
     }
     if (e.rootT > 0) {
       e.rootT--; e.vx = 0; e.vy = 0;   // 束缚：速度清零
-      if (e.hp <= 0) G.enemies.splice(i, 1); // 束缚期间死亡立即移除
+      if (e.hp <= 0) G.enemies.splice(i, 1);
       continue;
     }
-    if (e.slowStacks > 0) { 
-      if (e.slowT > 0) e.slowT--; 
-      else { e.slowStacks--; e.slowT = ICE_DECAY; } 
-    }
+    // if (e.slowStacks > 0) {
+    //   if (e.slowT > 0) e.slowT--; 
+    //   else { e.slowStacks--; e.slowT = ICE_DECAY; } 
+    // } // 减速
+    // - ICE_SLOW * buffIce * (e.slowStacks||0) 
     if (e.quakeSlowT > 0) e.quakeSlowT--;   // 地崩山摧独立减速
-    const spd = Math.max(0, t.spd - ICE_SLOW * buffIce * (e.slowStacks||0)
-                            - (e.quakeSlowT > 0 ? QUAKE_SLOW : 0));
+    const spd = Math.max(0, t.spd * (e.quakeSlowT > 0 ? 1 - slowRate : 1));
     const d = dist(e, p);
     let dmg = e.dmg;   // const 无法赋值，护盾减伤后抛异常
 
@@ -1836,14 +1871,13 @@ function updateBoss() {
       addParticles(b.x, b.y, ENRAGE_COLOR, 20, 4, 35);
     }
   }
-  if (b.slowStacks > 0) { 
-    if (b.slowT > 0) b.slowT--;
-     else { b.slowStacks--; b.slowT = ICE_DECAY; } 
-  }
+  // if (b.slowStacks > 0) { 
+  //   if (b.slowT > 0) b.slowT--;
+  //    else { b.slowStacks--; b.slowT = ICE_DECAY; } 
+  // }- ICE_SLOW * getBuffIce() * (b.slowStacks||0)
   if (b.quakeSlowT > 0) b.quakeSlowT--;
   const spdMult = phase.spdMult || 1;
-  const spd = Math.max(0, B.spd * spdMult - ICE_SLOW * getBuffIce() * (b.slowStacks||0)
-                          - (b.quakeSlowT > 0 ? QUAKE_SLOW : 0));
+  const spd = Math.max(0, B.spd * spdMult * (b.quakeSlowT > 0 ? 1 - getBuffEarth() * QUAKE_SLOW : 1));
   const rooted = b.rootT > 0;
   if (rooted) { b.rootT--; b.vx = 0; b.vy = 0; }
   b.moveT--;
@@ -2211,7 +2245,7 @@ function updateTreeSpirits() {  // 更新木灵（2星木灵 / 4星花仙）
       B.healTick--;
       if (B.healTick === 0) healAllTreeSpirits();
   }
-  const S = SPELL_MAP['wood|CIRCLE'];   // 2星木灵攻击模板（循环外取一次）
+  const S = SPELL_MAP['wood|CIRCLE'];   // 循环外取一次
   for (let i = G.treeSpirits.length - 1; i >= 0; i--) {
     const s = G.treeSpirits[i];
     if (s.atkEff > 0) s.atkEff--;
@@ -2267,7 +2301,7 @@ function updateTreeSpirits() {  // 更新木灵（2星木灵 / 4星花仙）
       continue;
     }
 
-    // 每2秒对1单位内敌人造成2伤害
+    // 木灵每2秒对1单位内敌人造成2伤害
     if (s.atkCD <= 0) {
       s.atkCD = S.atkCD;
       s.atkEff = 30; // 攻击特效持续
@@ -2725,13 +2759,13 @@ function drawProjectiles(ally) {   // ally=true 仅友方 / false 仅敌方 / �
     ctx.fillStyle = color;
     ctx.shadowColor = color; ctx.shadowBlur = 10;
     if (pr.ally && pr.elem === 'ice') {   // 1星冰锥：菱形尖头朝速度方向
-      const a = pr.r * 1.6;
+      const a = pr.r * 2;
       ctx.save();
       ctx.translate(pr.x, pr.y);
       ctx.rotate(pr.ang || 0);
       ctx.beginPath();
-      ctx.moveTo(a, 0); ctx.lineTo(0, a * 0.55);
-      ctx.lineTo(-a, 0); ctx.lineTo(0, -a * 0.55);
+      ctx.moveTo(a, 0); ctx.lineTo(0, a * 0.5);
+      ctx.lineTo(-a, 0); ctx.lineTo(0, -a * 0.5);
       ctx.closePath();
       ctx.fill();
       ctx.restore();
@@ -2934,7 +2968,7 @@ function drawtraceEffects() {
     ctx.strokeStyle = le.color; ctx.lineWidth = 5;
     ctx.lineCap = 'round'; ctx.lineJoin = 'round';
     ctx.shadowColor = le.color; ctx.shadowBlur = 15;
-    if (le.type === 'zigzag') {
+    if (le.type === 'flash') {
       // 雷线效果：外层光晕 + 内层白芯
       ctx.shadowColor = le.color; ctx.shadowBlur = 20;
       ctx.strokeStyle = le.color; ctx.lineWidth = le.width || 8;
@@ -3570,6 +3604,7 @@ document.addEventListener('contextmenu', e => { if (IS_MOBILE) e.preventDefault(
 
 requestAnimationFrame(loop);
 try { getTemplates(); } catch(e) { console.error('Template init failed:', e); }
+console.log('[G] build gesture-debug-1121');   // TEMP：控制台没这行 = 跑的不是这个文件/没刷新
 
 </script>
 <script>
