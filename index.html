@@ -340,10 +340,10 @@ const SPELLS = [
   { id:'water_line',   name:'龙王一喷',     elem:'water',   gesture:'LINE', cost:1, type:'line',   dmg:2, len:2*UNIT },
   // === CIRCLE (2星) 范围法术 ===
   { id:'fire_circle',  name:'朱雀扇',   elem:'fire',    gesture:'CIRCLE', cost:2, type:'fan',    dmg:4, radius:3*UNIT, radian:Math.PI*2/3 },
-  { id:'wood_circle',  name:'木灵召唤', elem:'wood',    gesture:'CIRCLE', cost:2, type:'summon',   spiritHp:20, dmg:2, atkCD:120, atkRange:1*UNIT }, 
+  { id:'wood_circle',  name:'木灵召唤', elem:'wood',    gesture:'CIRCLE', cost:2, type:'spirit',   spiritHp:20, dmg:2, atkCD:120, atkRange:1*UNIT }, 
   { id:'earth_circle', name:'守护之墙',     elem:'earth',   gesture:'CIRCLE', cost:2, type:'wall',   size:1*UNIT, wallHp:40 },
   { id:'thunder_circle',name:'雷の呼吸·壹之型', elem:'thunder', gesture:'CIRCLE', cost:2, type:'chain',  dmg:3, range:2*UNIT, maxJumps:6 },
-  { id:'ice_circle',   name:'冰冻三尺',     elem:'ice',     gesture:'CIRCLE', cost:2, type:'freeze',   dmg:2, radius:2*UNIT, freezeMon:3*60, freezeBoss:3*60 },
+  { id:'ice_circle',   name:'冰冻三尺',     elem:'ice',     gesture:'CIRCLE', cost:2, type:'freeze',   dmg:2, radius:2*UNIT, freezeMon:2*60, freezeBoss:2*60 },
   { id:'water_circle', name:'春风化雨', elem:'water',   gesture:'CIRCLE', cost:2, type:'healzone', radius:1.5*UNIT, healRate:10, dur:5*60 },
 ];
 const SPELL_MAP = {};
@@ -364,10 +364,10 @@ ENHANCE_SPELLS.forEach(s => { ENHANCE_MAP[s.elem + '|' + s.gesture] = s; });
 // === 4星(ZIGZAG) 史诗法术 === 消耗4材料, 冷却6s, 需解锁
 const Epic_SPELLS = [
   { id:'fire_zig',    name:'陨星',         elem:'fire',    gesture:'ZIGZAG', cost:4, cd:360, type:'meteor',   dmg:8, radius:2*UNIT, castTime:60 },
-  { id:'wood_zig',    name:'花仙下凡',        elem:'wood',    gesture:'ZIGZAG', cost:4, cd:360, type:'flower',   hp:40, dmg:2, rootDmg:1, atkCD:60, atkRange:2*UNIT, spd:2.5 },
+  { id:'wood_zig',    name:'花仙下凡',        elem:'wood',    gesture:'ZIGZAG', cost:4, cd:360, type:'fairy',   hp:40, dmg:2, rootDmg:1, atkCD:60, atkRange:2*UNIT, spd:2.5 },
   { id:'earth_zig',   name:'地崩山摧',        elem:'earth',   gesture:'ZIGZAG', cost:4, cd:360, type:'quake',    dmg:4, times:4, size:4*UNIT, atkCD:120 },
-  { id:'thunder_zig', name:'雷の呼吸·柒之型', elem:'thunder',  gesture:'ZIGZAG', cost:4, cd:360, type:'thunder7', dmg:4, atkRange:3*UNIT, maxJumps:8, atkCD:30 },
-  { id:'ice_zig',     name:'绝对零度',        elem:'ice',     gesture:'ZIGZAG', cost:4, cd:360, type:'blizzard', dmg:4, radius:2.5*UNIT, freezeMon:3*60, freezeBoss:3*60 },
+  { id:'thunder_zig', name:'雷の呼吸·柒之型', elem:'thunder',  gesture:'ZIGZAG', cost:4, cd:360, type:'thunder7', dmg:6, atkRange:3*UNIT, maxJumps:8, atkCD:30 },
+  { id:'ice_zig',     name:'绝对零度',        elem:'ice',     gesture:'ZIGZAG', cost:4, cd:360, type:'blizzard', dmg:4, radius:2.5*UNIT, freezeMon:4*60, freezeBoss:4*60 },
   { id:'water_zig',   name:'漩涡',           elem:'water',   gesture:'ZIGZAG', cost:4, cd:360, type:'vortex',   dmg:1, dur:600, radius:2.5*UNIT },
 ];
 const Epic_MAP = {};
@@ -377,7 +377,7 @@ const ENEMY_TYPES = {
   slime:   { name:'史莱姆', elem:'water',   hp:3, spd:1.0, dmg:4, r:14, drop:'water',   ai:'chase'  },
   wolf:    { name:'土野狼',   elem:'earth',   hp:3, spd:1.5, dmg:3, r:15, drop:'earth',   ai:'charge' },
   bat:     { name:'酷雷蝠',   elem:'thunder', hp:3, spd:2.0, dmg:2, r:12, drop:'thunder', ai:'swarm'  },
-  spirit:  { name:'树精',     elem:'wood',    hp:6, spd:.75,  dmg:4, r:20, drop:'wood',    ai:'ranged', atkCD:120, atkRange:3*UNIT, elite:true },
+  tree:  { name:'树精',     elem:'wood',    hp:6, spd:.75,  dmg:4, r:20, drop:'wood',    ai:'ranged', atkCD:120, atkRange:3*UNIT, elite:true },
   firebug: { name:'熔岩虫',   elem:'fire',    hp:3, spd:1.25, dmg:3, r:13, drop:'fire',    ai:'swarm'  },
   iceshard:{ name:'雪怪',    elem:'ice',     hp:4, spd:1.0, dmg:3, r:16, drop:'ice',     ai:'charge'  },
 };
@@ -412,13 +412,13 @@ const BOSS_TYPES = { // 木冰同时免疫+散射=无敌
     phases: [
       { hpPct: 1.0,  weak: 'ice',  elemMode: 'water',   resist: 'fire',  phaseName: '水', immune: '',  summon: 'slime',   summonCD: 360, spdMult: 1.0 },
       { hpPct: 0.65,  weak: 'thunder',  elemMode: 'ice',   resist: 'water', phaseName: '冰', immune: '', summon: 'iceshard', summonCD: 300, spdMult: 1.2 },
-      { hpPct: 0.30, weak: '',   resist: '',  phaseName: '狂暴',   elemMode: ['water', 'ice'],    immune: ['fire', 'water'], summon: 'spirit',   summonCD: 240, spdMult: 1.5, scatter: false },
+      { hpPct: 0.30, weak: '',   resist: '',  phaseName: '狂暴',   elemMode: ['water', 'ice'],    immune: ['fire', 'water'], summon: 'tree',   summonCD: 240, spdMult: 1.5, scatter: false },
     ],
   },
   evilSpirit:{
     name: '腐化树灵', hp: 60, spd: 1, dmg: 10, r: 30, atkCD: 100, atkRange:1*UNIT,
     phases: [
-      { hpPct: 1.0,  weak: 'fire',  elemMode: 'wood',  resist: 'earth', phaseName: '木',  immune: '', summon: 'spirit', summonCD: 360, spdMult: 1.0 },
+      { hpPct: 1.0,  weak: 'fire',  elemMode: 'wood',  resist: 'earth', phaseName: '木',  immune: '', summon: 'tree', summonCD: 360, spdMult: 1.0 },
       { hpPct: 0.70, weak: 'water',  elemMode: 'fire',   resist: 'wood',  phaseName: '火', immune: '',  summon: 'firebug',    summonCD: 300, spdMult: 1.2 },
       { hpPct: 0.40, weak: '',   resist: '',  phaseName: '狂暴',   elemMode: ['wood', 'fire'],    immune: ['earth', 'wood'], summon: 'wolf',   summonCD: 240, spdMult: 1.5 , scatter: false },
     ],
@@ -527,14 +527,22 @@ function recognizeGesture(rawPts) {  // 手势识别：$1 模板（Z/圆）+ 几
   const startEnd = dist(pts[0], pts[pts.length-1]);
   const aspectRatio = Math.min(bb.w, bb.h) / Math.max(bb.w, bb.h);
 
-  // 0. 快速短划（1 星线段）：手指一抖就带弯，先按直线度判定，避免被 Z/圆/V 抢走
-  if (startEnd > 25 && plen < startEnd * 1.15) {
-    let maxDev = 0;
-    for (let i = 1; i < pts.length - 1; i++) {
-      const dv = pointToLineDist(pts[i].x, pts[i].y, pts[0].x, pts[0].y, pts[pts.length-1].x, pts[pts.length-1].y);
-      if (dv > maxDev) maxDev = dv;
+  // 0. 直线优先：掐掉首尾各 8% 的点（落笔/起笔小勾），只看主体是否笔直
+  //    快速短划和长划都会带勾，勾子会把折点抢到端点，导致误判成 V（甚至回钩成环）
+  if (startEnd > 25) {
+    const k = Math.max(2, Math.floor(pts.length * 0.08));
+    if (pts.length > 2 * k + 3) {
+      const a0 = pts[k], b0 = pts[pts.length - 1 - k];
+      const chord = dist(a0, b0);
+      if (chord > 20) {
+        let dev = 0;
+        for (let i = k + 1; i < pts.length - 1 - k; i++) {
+          const dv = pointToLineDist(pts[i].x, pts[i].y, a0.x, a0.y, b0.x, b0.y);
+          if (dv > dev) dev = dv;
+        }
+        if (dev < chord * 0.12) return {type:'LINE', score: 0.9};
+      }
     }
-    if (maxDev < startEnd * 0.12) return {type:'LINE', score: 0.9};
   }
 
   const tpls = getTemplates();
@@ -604,7 +612,7 @@ function recognizeGesture(rawPts) {  // 手势识别：$1 模板（Z/圆）+ 几
       const v2x = ep.x - bp.x, v2y = ep.y - bp.y;
       const dot = v1x*v2x + v1y*v2y;
       const m1 = Math.hypot(v1x, v1y), m2 = Math.hypot(v2x, v2y);
-      // 两臂都得够长：长直线起笔常带小钩，钩子会让夹角变小而误判成 V
+      // 两臂都得够长：长直线落笔/起笔常带小钩，钩子会让夹角变小而误判成 V
       if (m1 > startEnd * 0.25 && m2 > startEnd * 0.25) {
         const ang = Math.acos(clamp(dot / (m1 * m2), -1, 1));
         if (ang * 180 / Math.PI <= 120) return {type:'CHEVRON', score: 0.85};
@@ -747,8 +755,8 @@ const PROF_MAX = 999;
 const TAUNT_RANGE = 2*UNIT;          // 精灵嘲讽范围
 const ICE_DECAY = 120;        // 冰锥减速衰减1层的时间
 const ICE_SLOW = 0.3;          // 冰锥每层减速量
-const QUAKE_DECAY = 60;   // 地崩山摧减速持续时间
-const QUAKE_SLOW = 0.6;        // 地崩山摧减速量
+const QUAKE_DECAY = 120;   // 地崩山摧减速持续时间
+const QUAKE_SLOW = 0.5;        // 地崩山摧减速量
 
 // ==================== 工具函数 ====================
 const TAU = Math.PI * 2;
@@ -932,7 +940,7 @@ function castEpicSpell(spell) {
       }});
       break;
     }
-    case 'flower': { // 花仙：正前方召唤，上限1（重复施放增加Hp）
+    case 'fairy': { // 花仙：正前方召唤，上限1（重复施放增加Hp）
       const Hp = spell.hp * getBuffWood();
       const s = G.treeSpirits.find(t => t.kind === 'fairy');
       if (s) {
@@ -1334,7 +1342,7 @@ function castSpell(spell) {
     }
     G.shake = 6;
     addProf('earth');
-  } else if (spell.type === 'summon') {
+  } else if (spell.type === 'spirit') {
     // 木：召唤木灵，血量20，嘲讽
     const Hp = spell.spiritHp * getBuffWood();
     G.treeSpirits.push({
@@ -1446,7 +1454,7 @@ function startNextWave() {
   // Add elite monsters in pre-boss waves
   const cycleWave = (G.wave - 1) % BOSS_INTERVAL + 1;  // 1,2,……
   for (let i = 0; i < cycleWave; i++) {
-    G.spawnQueue.push('spirit');
+    G.spawnQueue.push('tree');
   }
   G.waveActive = true;
   G.spawnT = 0;
@@ -2717,13 +2725,15 @@ function drawProjectiles(ally) {   // ally=true 仅友方 / false 仅敌方 / �
     ctx.fillStyle = color;
     ctx.shadowColor = color; ctx.shadowBlur = 10;
     if (pr.ally && pr.elem === 'ice') {   // 1星冰锥：菱形尖头朝速度方向
-      const a = pr.r * 1.25;
+      const a = pr.r * 1.6;
       ctx.save();
       ctx.translate(pr.x, pr.y);
       ctx.rotate(pr.ang || 0);
       ctx.beginPath();
-      ctx.moveTo(a, 0); ctx.lineTo(0, a); ctx.lineTo(-a, 0); ctx.lineTo(0, -a);
-      ctx.closePath(); ctx.fill();
+      ctx.moveTo(a, 0); ctx.lineTo(0, a * 0.55);
+      ctx.lineTo(-a, 0); ctx.lineTo(0, -a * 0.55);
+      ctx.closePath();
+      ctx.fill();
       ctx.restore();
     } else {
       ctx.beginPath(); ctx.arc(pr.x, pr.y, pr.r, 0, TAU); ctx.fill();
@@ -3031,13 +3041,13 @@ function drawtraceEffects() {
       ctx.beginPath(); ctx.arc(le.x, le.y, rr * 0.62, 0, TAU); ctx.stroke();
     } else if (le.type === 'meteor') {
       // 陨星：从出现到坠地的整个过程1s
-      const prog = 1 - le.life / le.total;            // 0 → 1
-      const mtp = 1 + prog * 0.5;
+      const prog = 1 - le.life / le.total;      // 0 → 1
+      const mtp = (1 + prog * 0.5) * getBuffFire();  // 内核
       const dropY = le.startY + (le.y - le.startY) * Math.pow(prog, 1.4);   // 加速下落
-      ctx.globalAlpha = a * 0.55;                     // 落点预警圈
+      ctx.globalAlpha = a * 0.55; 
       ctx.setLineDash([8, 8]);
       ctx.strokeStyle = le.color; ctx.lineWidth = 3;
-      ctx.beginPath(); ctx.arc(le.x, le.y, le.r, 0, TAU); ctx.stroke();
+      ctx.beginPath(); ctx.arc(le.x, le.y, le.r, 0, TAU); ctx.stroke();  // 落点圈
       ctx.setLineDash([]);
       ctx.globalAlpha = a;
       ctx.strokeStyle = le.color; ctx.lineWidth = 16;  // 尾焰
