@@ -31,6 +31,8 @@ button:hover{transform:scale(1.05)}
 #hp-bar{height:100%;background:linear-gradient(90deg,#f44336,#ff8a65);transition:width .3s;width:100%}
 #hp-bar.shield{background:linear-gradient(90deg,#5c6bc0,#7986cb)}
 #hp-text{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:12px;text-shadow:0 0 3px #000}
+#hp-group{display:flex;align-items:center;gap:6px}
+#shield-tag{display:flex;align-items:center;gap:3px;background:rgba(0,0,0,.6);border:1px solid #444;border-radius:5px;padding:1px 7px;font-size:12px;color:#9fa8da;white-space:nowrap}
 .tag{background:rgba(0,0,0,.6);padding:3px 10px;border-radius:5px;font-size:13px;border:1px solid #444}
 #mat-bar{position:absolute;bottom:12px;left:50%;transform:translateX(-50%);display:flex;gap:6px;pointer-events:auto}
 .mslot{width:48px;height:48px;border-radius:8px;background:rgba(0,0,0,.6);border:2px solid #333;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;position:relative;transition:all .15s}
@@ -149,7 +151,10 @@ button:hover{transform:scale(1.05)}
 <div id="hud" class="hidden">
   <div id="top-bar">
     <div id="buff-info"></div>
-    <div id="hp-box"><div id="hp-bar"></div><span id="hp-text">100/100</span></div>
+    <div id="hp-group">
+      <div id="hp-box"><div id="hp-bar"></div><span id="hp-text">100/100</span></div>
+      <div id="shield-tag" class="hidden"><svg viewBox="0 0 24 24" width="13" height="13"><path d="M12 2l8 3v6c0 5-3.5 9-8 11-4.5-2-8-6-8-11V5z" fill="#7986cb" stroke="#9fa8da" stroke-width="1"/></svg><span id="shield-sec">0s</span></div>
+    </div>
     <div id="tag-row">
       <div class="tag" id="wave-tag">第1波</div>
     </div>
@@ -331,7 +336,7 @@ const SPELLS = [
   { id:'wood_line',    name:'藤蔓缠绕',   elem:'wood',    gesture:'LINE', cost:1, type:'instant',  dmg:1, range:3*UNIT, bindMon:4*60, bindBoss:2*60 },
   { id:'earth_line',   name:'碎石弹',   elem:'earth',   gesture:'LINE', cost:1, type:'projectile',  dmg:2, range:3*UNIT, r:8, split:true },
   { id:'thunder_line', name:'晴天霹雳',     elem:'thunder', gesture:'LINE', cost:1, type:'zigzag',  dmg:2, len:3*UNIT },
-  { id:'ice_line',     name:'冰锥术',     elem:'ice',     gesture:'LINE', cost:1, type:'projectile', dmg:2, range:3*UNIT, r:8, slow:true },
+  { id:'ice_line',     name:'冰锥术',     elem:'ice',     gesture:'LINE', cost:1, type:'projectile', dmg:2, range:3*UNIT, r:8, freezeMon:60, freezeBoss:60, slow:false },
   { id:'water_line',   name:'龙王一喷',     elem:'water',   gesture:'LINE', cost:1, type:'line',   dmg:2, len:2*UNIT },
   // === CIRCLE (2星) 范围法术 ===
   { id:'fire_circle',  name:'朱雀扇',   elem:'fire',    gesture:'CIRCLE', cost:2, type:'fan',    dmg:4, radius:3*UNIT, radian:Math.PI*2/3 },
@@ -393,9 +398,9 @@ const WAVE_TABLE = [
 
 const BOSS_INTERVAL = 3;
 const ENRAGE_COLOR = '#f500c8'; // boss狂暴配色
-const BOSS_TYPES = {
+const BOSS_TYPES = { // 木冰同时免疫+散射=无敌
   fairy: {
-    name: '堕落妖精', hp: 60, spd: 1.0, dmg: 6, r: 30, atkCD: 60, atkRange:6*UNIT,
+    name: '堕落妖精', hp: 60, spd: 1.2, dmg: 6, r: 25, atkCD: 60, atkRange:6*UNIT,
     phases: [
       { hpPct: 1.0,  weak: 'earth',  elemMode: 'thunder', resist: 'ice',   phaseName: '雷',    immune: '',   summon: 'bat', summonCD: 360, spdMult: 1.0 },
       { hpPct: 0.60, weak: 'wood',   elemMode: 'earth', resist: 'thunder',  phaseName: '土',    immune: '',   summon: 'wolf',     summonCD: 300, spdMult: 1.2 }, 
@@ -403,7 +408,7 @@ const BOSS_TYPES = {
     ],
   },
   golem: {
-    name: '深渊魔像', hp: 60, spd: 0.75, dmg: 8, r: 40, atkCD: 60, atkRange:6*UNIT,
+    name: '深渊魔像', hp: 60, spd: 0.75, dmg: 8, r: 40, atkCD: 80, atkRange:6*UNIT,
     phases: [
       { hpPct: 1.0,  weak: 'ice',  elemMode: 'water',   resist: 'fire',  phaseName: '水', immune: '',  summon: 'slime',   summonCD: 360, spdMult: 1.0 },
       { hpPct: 0.65,  weak: 'thunder',  elemMode: 'ice',   resist: 'water', phaseName: '冰', immune: '', summon: 'iceshard', summonCD: 300, spdMult: 1.2 },
@@ -411,7 +416,7 @@ const BOSS_TYPES = {
     ],
   },
   evilSpirit:{
-    name: '腐化树灵', hp: 60, spd: 1.2, dmg: 6, r: 25, atkCD: 90, atkRange:1*UNIT,
+    name: '腐化树灵', hp: 60, spd: 1, dmg: 10, r: 30, atkCD: 100, atkRange:1*UNIT,
     phases: [
       { hpPct: 1.0,  weak: 'fire',  elemMode: 'wood',  resist: 'earth', phaseName: '木',  immune: '', summon: 'spirit', summonCD: 360, spdMult: 1.0 },
       { hpPct: 0.70, weak: 'water',  elemMode: 'fire',   resist: 'wood',  phaseName: '火', immune: '',  summon: 'firebug',    summonCD: 300, spdMult: 1.2 },
@@ -522,6 +527,16 @@ function recognizeGesture(rawPts) {  // 手势识别：$1 模板（Z/圆）+ 几
   const startEnd = dist(pts[0], pts[pts.length-1]);
   const aspectRatio = Math.min(bb.w, bb.h) / Math.max(bb.w, bb.h);
 
+  // 0. 快速短划（1 星线段）：手指一抖就带弯，先按直线度判定，避免被 Z/圆/V 抢走
+  if (startEnd > 25 && plen < startEnd * 1.15) {
+    let maxDev = 0;
+    for (let i = 1; i < pts.length - 1; i++) {
+      const dv = pointToLineDist(pts[i].x, pts[i].y, pts[0].x, pts[0].y, pts[pts.length-1].x, pts[pts.length-1].y);
+      if (dv > maxDev) maxDev = dv;
+    }
+    if (maxDev < startEnd * 0.12) return {type:'LINE', score: 0.9};
+  }
+
   const tpls = getTemplates();
   const norm = normalizePath(pts);   // 只归一化一次，模板匹配复用
   const match = tpl => 1 - distanceAtBestAngle(norm, tpl, -ANG_RANGE, ANG_RANGE, ANG_PREC) / HALF_DIAG;
@@ -589,7 +604,8 @@ function recognizeGesture(rawPts) {  // 手势识别：$1 模板（Z/圆）+ 几
       const v2x = ep.x - bp.x, v2y = ep.y - bp.y;
       const dot = v1x*v2x + v1y*v2y;
       const m1 = Math.hypot(v1x, v1y), m2 = Math.hypot(v2x, v2y);
-      if (m1 > 1 && m2 > 1) {
+      // 两臂都得够长：长直线起笔常带小钩，钩子会让夹角变小而误判成 V
+      if (m1 > startEnd * 0.25 && m2 > startEnd * 0.25) {
         const ang = Math.acos(clamp(dot / (m1 * m2), -1, 1));
         if (ang * 180 / Math.PI <= 120) return {type:'CHEVRON', score: 0.85};
       }
@@ -843,13 +859,13 @@ function tryCastSpell(gestureType) {
         b.healTick = 300;
         healAllTreeSpirits();
       } else if (elem === 'water') { // 川流不息：立刻恢复20HP（乘增益层数）
-        const heal = round(20 * getBuffWater());
+        const heal = 20;
         G.player.hp = Math.min(G.player.maxHp, G.player.hp + heal);
         addFloatText(G.player.x, G.player.y - G.player.r - 15, '+' + heal + ' HP', ELEMENTS.water.color);
       } else if (elem === 'earth') { // 不动如山：获得20点护盾，持续10s
-        const sh = round(20 * getBuffEarth());
+        const sh = 20;
         G.player.shield += sh;
-        G.player.shieldT = 600;
+        G.player.shieldT += 600;
         addFloatText(G.player.x, G.player.y - G.player.r - 15, '护盾+' + sh, ELEMENTS.earth.color);
       } else if (elem === 'thunder') { // 风驰电掣：移速+50%/层，由 move 实现
         addFloatText(G.player.x, G.player.y - G.player.r - 15, '加速', ELEMENTS.thunder.color);
@@ -997,7 +1013,7 @@ function castEpicSpell(spell) {
   return true;
 }
 
-// 雷闪/柒之型索敌：范围内最远的目标（用边缘距离，与 findNearestEnemy 一致），可排除上一跳目标
+// 雷闪/柒之型索敌：范围内最远的目标（与 findNearestEnemy 相似）可排除上一跳目标
 function farthestEnemyWithin(from, range, exclude) {
   let best = null, bd = -Infinity;
   for (const e of G.enemies) {
@@ -1205,6 +1221,7 @@ function castSpell(spell) {
       x:p.x, y:p.y, vx:Math.cos(ang)*6, vy:Math.sin(ang)*6, cost: spell.cost || 0,
       dmg:spell.dmg, elem:spell.elem, r: spell.r * getBuff(spell.elem),
       slow: spell.slow || false, splash: spell.splash || false, split: spell.split || false,
+      freezeMon: spell.freezeMon || 0, freezeBoss: spell.freezeBoss || 0,
       life: spell.elem === 'earth' ? 360 : 120, target: target, ally: true,
       range: spell.range, traveled:0, fx:spell.fx||null,
       hitSet:new Set(), ang: ang
@@ -1771,8 +1788,7 @@ function updateBoss() {
   const range = b.atkRange;
   const hpPct = b.hp / b.maxHp;
   const len = phases.length;
-
- // Freeze check 冰封
+ // Freeze check 冰冻
   if (b.freezeT > 0) { 
     b.freezeT--; 
     b.atkCD = B.atkCD;
@@ -1868,14 +1884,14 @@ function updateBoss() {
     const shotElem = Array.isArray(b.elemMode) ? pick(b.elemMode) : b.elemMode;
     if (b.type === 'evilSpirit') {
       // 腐化树灵：固定位置扩散波纹；冲击波不打木灵——本是同根生
-      G.traceEffects.push({type:'ripple', x:b.x, y:b.y, r:range, total:45, life:45,
+      G.traceEffects.push({type:'ripple', x:b.x, y:b.y, r:range, total:50, life:50,
         color:'#8bc34a', elem:'wood'});
       if (dist(b, p)-b.r < range + p.r && p.hitFlash <= 0) { 
         if (p.shield > 0) { const a = Math.min(p.shield, dmg); p.shield -= a; }
         else { p.hp -= dmg; p.hitFlash = 30; G.shake = round(dmg);
           const ka = angle(b, p); 
-          p.vx -= Math.cos(ka)*2; 
-          p.vy -= Math.sin(ka)*2;
+          p.vx -= Math.cos(ka)*5; 
+          p.vy -= Math.sin(ka)*5;
           addFloatText(p.x, p.y-p.r-10, '-'+round(dmg), '#f44336');
         }
       }
@@ -2009,12 +2025,19 @@ function updateProjectiles() {
           }
           addParticles(G.boss.x, G.boss.y, ELEMENTS['fire'].color, 10, 3, 30);
         }
+        if (pr.freezeBoss) {   // 冰锥：冰冻 1 秒（原减速已停用）
+          G.boss.freezeT += getBuffIce() * pr.freezeBoss;
+          addFloatText(G.boss.x, G.boss.y-G.boss.r-20, '冰冻', '#81d4fa');
+          addParticles(pr.x, pr.y, ELEMENTS['ice'].color, 8, 4, 30);
+        }
+        /* 减速效果已停用
         if (pr.slow) {
           G.boss.slowStacks = (G.boss.slowStacks) + 1;
           G.boss.slowT = ICE_DECAY;
           addFloatText(G.boss.x, G.boss.y-G.boss.r-20, '减速', '#81d4fa');
           addParticles(pr.x, pr.y, ELEMENTS['ice'].color, 8, 4, 30);
         }
+        */
         addProf(pr.elem);
         if (pr.split) splitEarth(pr);
         pr.life = 0;
@@ -2033,12 +2056,19 @@ function updateProjectiles() {
                 }
               }
             }
+            if (pr.freezeMon) {
+              e.freezeT += getBuffIce() * pr.freezeMon;
+              addParticles(pr.x, pr.y, ELEMENTS['ice'].color, 6, 4, 20);
+              addFloatText(e.x, e.y-e.r-20, '冰冻', '#81d4fa');
+            }
+            /*
             if (pr.slow) {
               e.slowStacks = e.slowStacks + 1;
               e.slowT = ICE_DECAY;
               addParticles(pr.x, pr.y, ELEMENTS['ice'].color, 6, 4, 20);
               addFloatText(e.x, e.y-e.r-20, '减速', '#81d4fa');
             }
+            */
             if (pr.split) splitEarth(pr);
             addProf(pr.elem);
             pr.life = 0; break;
@@ -2189,6 +2219,11 @@ function updateTreeSpirits() {  // 更新木灵（2星木灵 / 4星花仙）
         s.y = clamp(s.y + s.vy, s.r, H-s.r);
       } else {
         s.vx *= 0.9; s.vy *= 0.9;
+      }
+      {  // 眼睛朝目标（同小怪）：优先当前目标，其次最近敌人，最后移动方向
+        const tgt = findNearestEnemy(s.x, s.y, 600);
+        if (tgt) s.facing = angle(tgt, s);
+        else if (s.vx || s.vy) s.facing = Math.atan2(s.vy, s.vx);
       }
       if (s.atkCD <= 0) {
         const bindMode = Math.random() < 0.5;           // 50% 藤蔓束缚 / 50% 木伤
@@ -2533,7 +2568,7 @@ function drawEnemies() {
     const elemColor = ELEMENTS[t.elem].color;
     let color = elemColor;
     if (e.hitFlash > 0) color = '#fff';
-    else if (e.freezeT > 0) color = '#81d4fa';
+    else if (e.freezeT > 0) color = '#ffffff';
     else if ((e.slowStacks) > 0) color = lerpColor(elemColor, '#42a5f5', Math.min(1.0, 0.25 * e.slowStacks));
     ctx.fillStyle = color;
     ctx.shadowColor = elemColor; ctx.shadowBlur = 8;
@@ -2681,7 +2716,18 @@ function drawProjectiles(ally) {   // ally=true 仅友方 / false 仅敌方 / �
     const color = pr.ally ? ELEMENTS[pr.elem].color : '#689f38';
     ctx.fillStyle = color;
     ctx.shadowColor = color; ctx.shadowBlur = 10;
-    ctx.beginPath(); ctx.arc(pr.x, pr.y, pr.r, 0, TAU); ctx.fill();
+    if (pr.ally && pr.elem === 'ice') {   // 1星冰锥：菱形尖头朝速度方向
+      const a = pr.r * 1.25;
+      ctx.save();
+      ctx.translate(pr.x, pr.y);
+      ctx.rotate(pr.ang || 0);
+      ctx.beginPath();
+      ctx.moveTo(a, 0); ctx.lineTo(0, a); ctx.lineTo(-a, 0); ctx.lineTo(0, -a);
+      ctx.closePath(); ctx.fill();
+      ctx.restore();
+    } else {
+      ctx.beginPath(); ctx.arc(pr.x, pr.y, pr.r, 0, TAU); ctx.fill();
+    }
     ctx.shadowBlur = 0;
   }
 }
@@ -2809,9 +2855,13 @@ function drawTreeSpirits() {
       ctx.beginPath(); ctx.arc(0, 0, s.r * 0.72, 0, TAU); ctx.fill();
       ctx.shadowBlur = 0;
       ctx.strokeStyle = '#e6cf7d'; ctx.lineWidth = 2; ctx.stroke();
-      // 黑眼睛
+      // 黑眼睛（按 facing 偏移，同小怪）
+      const fxe = Math.cos(s.facing || 0) * 3.4, fye = Math.sin(s.facing || 0) * 3.4;
       ctx.fillStyle = '#1f1f1f';
-      ctx.beginPath(); ctx.arc(-3.4, -1, 1.8, 0, TAU); ctx.arc(3.4, -1, 1.8, 0, TAU); ctx.fill();
+      ctx.beginPath();
+      ctx.arc(fxe - 3.4, fye - 1, 1.8, 0, TAU);
+      ctx.arc(fxe + 3.4, fye - 1, 1.8, 0, TAU);
+      ctx.fill();
       ctx.restore();
       if (s.hp < s.maxHp) {  // 超过最大Hp不显示以免误判
         const bw = s.r*2, bh = 4;
@@ -3222,6 +3272,11 @@ function updateHUD() {
   hpBar.style.width = pct + '%';
   hpBar.classList.toggle('shield', p.shield > 0);
   document.getElementById('hp-text').textContent = Math.max(0, round(p.hp)) + '/' + p.maxHp + (p.shield > 0 ? ' +' + round(p.shield) : '');
+  const stEl = document.getElementById('shield-tag');
+  if (p.shield > 0 && p.shieldT > 0) {
+    stEl.classList.remove('hidden');
+    document.getElementById('shield-sec').textContent = Math.ceil(p.shieldT / 60) + 's';
+  } else stEl.classList.add('hidden');
   const fb = document.getElementById('spell-fb');
   if (G.fdbkT > 0) {
     fb.textContent = G.fbText;
